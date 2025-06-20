@@ -1,0 +1,34 @@
+{
+  "name": "online_bookshop",
+  "version": "1.0.0",
+  "description": "2-1 database project",
+  "main": "backend/server.js",
+  "scripts": {
+    "dev": "nodemon backend/server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TuliAfroz/Online_Bookshop.git"
+  },
+  "keywords": [],
+  "author": "",
+  "type": "module",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/TuliAfroz/Online_Bookshop/issues"
+  },
+  "homepage": "https://github.com/TuliAfroz/Online_Bookshop#readme",
+  "dependencies": {
+    "@arcjet/node": "^1.0.0-beta.8",
+    "@neondatabase/serverless": "^1.0.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "helmet": "^8.1.0",
+    "morgan": "^1.10.0",
+    "pg": "^8.16.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}
