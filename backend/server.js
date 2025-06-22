@@ -5,6 +5,8 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 
 import bookRoutes from './routes/bookRoutes.js';
+import authRoutes from './routes/authRoutes.js';
+
 import { readFile } from 'fs/promises';
 import pool from './config/db.js';
 import path from 'path';
@@ -26,6 +28,7 @@ app.use(express.json());
 app.use(cors());
 
 app.use('/api/books', bookRoutes);
+app.use('/api/auth', authRoutes);
 
 export async function initializeDB() {
   try {
