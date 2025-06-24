@@ -6,8 +6,9 @@ import dotenv from 'dotenv';
 
 import bookRoutes from './routes/bookRoutes.js';
 import authRoutes from './routes/authRoutes.js';
+import authorRoutes from './routes/authorRoutes.js';
 import categoryRoutes from './routes/categoryRoutes.js';
-
+import publisherRoutes from './routes/publisherRoutes.js';
 
 import { readFile } from 'fs/promises';
 import pool from './config/db.js';
@@ -31,8 +32,9 @@ app.use(cors());
 
 app.use('/api/books', bookRoutes);
 app.use('/api/auth', authRoutes);
-app.use('/api', categoryRoutes);
-
+app.use('/api/authors', authorRoutes);
+app.use('/api/categories', categoryRoutes);
+app.use('/api/publishers', publisherRoutes);
 
 export async function initializeDB() {
   try {

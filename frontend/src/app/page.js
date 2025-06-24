@@ -1,30 +1,40 @@
+// src/app/page.js
 'use client';
+import { useRouter } from 'next/navigation';
 
-import { useEffect, useState } from 'react';
-
-export default function Home() {
-  const [books, setBooks] = useState([]);
-
-  useEffect(() => {
-    fetch('http://localhost:3000/api/books')  // Adjust endpoint if needed
-      .then(res => res.json())
-      .then(data => {
-        setBooks(data.data);  // assuming { success: true, data: [...] }
-      });
-  }, []);
+export default function HomePage() {
+  const router = useRouter();
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Available Books</h1>
-      <ul className="space-y-2">
-        {books.map(book => (
-          <li key={`${book.book_id}-${book.copy_no}`} className="bg-white p-4 rounded shadow">
-            <h2 className="text-xl font-semibold">{book.title}</h2>
-            <p>{book.description}</p>
-            <p className="text-sm text-gray-500">Price: ${book.price}</p>
-          </li>
-        ))}
-      </ul>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4">
+      <h1 className="text-4xl font-bold mb-6">📚 Welcome to the Online Bookshop</h1>
+
+      <div className="space-x-4">
+        <button
+          onClick={() => router.push('/admin/login')}
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+        >
+          Admin Login
+        </button>
+        <button
+          onClick={() => router.push('/customer/login')}
+          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+        >
+          Customer Login
+        </button>
+        <button
+          onClick={() => router.push('/customer/signup')}
+          className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
+        >
+          Customer Signup
+        </button>
+        <button
+          onClick={() => router.push('/admin/signup')}
+          className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
+        >
+          Admin Signup
+        </button>
+      </div>
     </div>
   );
 }

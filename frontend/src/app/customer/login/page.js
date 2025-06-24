@@ -31,7 +31,7 @@ export default function CustomerLoginPage() {
         setError(data.error || 'Login failed');
       } else {
         localStorage.setItem('token', data.token);
-        router.push('/dashboard'); // ✅ Change this to your target page
+        router.push('/customer/dashboard'); // ✅ Change this to your target page
       }
     } catch (err) {
       setError('Something went wrong. Try again.');
