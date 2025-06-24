@@ -23,3 +23,14 @@ ADD COLUMN customer_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY;
 ALTER TABLE customer
 ADD CONSTRAINT unique_customer_email UNIQUE (email);
 
+//==========//
+PORT=3000
+
+PGHOST=localhost
+PGPORT=5432
+PGUSER=postgres
+PGPASSWORD=1254
+PGDATABASE=postgres 
+
+JWT_SECRET=aBcD123eFgH??
+
