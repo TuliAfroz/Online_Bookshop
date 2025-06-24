@@ -192,8 +192,8 @@ ALTER TABLE Shipment
 ALTER TABLE Inventory
   ADD FOREIGN KEY (Book_ID, Copy_No) REFERENCES Book(Book_ID, Copy_No);
 
-ALTER TABLE Inventory
-  ADD FOREIGN KEY (Admin_ID) REFERENCES Admin(Admin_ID);
+--ALTER TABLE Inventory
+  --ADD FOREIGN KEY (Admin_ID) REFERENCES Admin(Admin_ID);
 
 ALTER TABLE Review
   ADD FOREIGN KEY (Book_ID, Copy_No) REFERENCES Book(Book_ID, Copy_No);

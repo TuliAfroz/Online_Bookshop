@@ -24,7 +24,9 @@ export const signupAdmin = async (req, res) => {
 
 // ===================== CUSTOMER SIGNUP =====================
 export const signupCustomer = async (req, res) => {
+
   const { Customer_Name, Email, Password, Address, Phone_No } = req.body;
+  console.log("🚀 Received signup request:", req.body); 
   try {
     // Check if email already exists
     const check = await pool.query(
@@ -47,7 +49,7 @@ export const signupCustomer = async (req, res) => {
       Customer_ID: result.rows[0].customer_id
     });
   } catch (err) {
-    console.error(err);
+    console.error("❌ Error in signupCustomer:", err);
     res.status(500).json({ error: 'Customer signup failed' });
   }
 };
