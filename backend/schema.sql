@@ -117,7 +117,7 @@ CREATE TABLE IF NOT EXISTS Shipment (
 CREATE TABLE IF NOT EXISTS Inventory (
   Book_ID  INT,
   --Copy_No  INT,
-  --Admin_ID INT,
+  Admin_ID INT,
   Quantity INT NOT NULL,
   PRIMARY KEY (Book_ID)
 );
