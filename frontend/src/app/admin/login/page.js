@@ -3,39 +3,34 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-export default function AdminSignupPage() {
+export default function AdminLoginPage() {
   const [adminId, setAdminId] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const router = useRouter();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    setSuccess('');
 
     try {
-      const res = await fetch('http://localhost:3000/api/auth/admin/signup', {
+      const res = await fetch('http://localhost:3000/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          Admin_ID: adminId,
-          Password: password,
+          role: 'admin',
+          id: adminId,
+          password,
         }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || 'Signup failed');
+        setError(data.error || 'Login failed');
       } else {
-        setSuccess('Admin created successfully!');
-        setAdminId('');
-        setPassword('');
-        setTimeout(() => {
-          router.push('/admin/login');
-        }, 1500);
+        localStorage.setItem('token', data.token);
+        router.push('/admin/dashboard'); // ✅ You can create this page later
       }
     } catch (err) {
       console.error(err);
@@ -46,7 +41,7 @@ export default function AdminSignupPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
       <div className="max-w-md w-full bg-white p-6 rounded-2xl shadow-md">
-        <h2 className="text-2xl font-bold mb-6 text-center">Admin Signup</h2>
+        <h2 className="text-2xl font-bold mb-6 text-center">Admin Login</h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <input
@@ -68,13 +63,12 @@ export default function AdminSignupPage() {
           />
 
           {error && <p className="text-red-600 text-sm">{error}</p>}
-          {success && <p className="text-green-600 text-sm">{success}</p>}
 
           <button
             type="submit"
             className="w-full bg-blue-600 text-white p-2 rounded-xl hover:bg-blue-700 transition"
           >
-            Sign Up
+            Log In
           </button>
         </form>
       </div>

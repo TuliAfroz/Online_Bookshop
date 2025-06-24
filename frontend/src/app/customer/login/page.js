@@ -1,63 +1,58 @@
+// app/customer/login/page.js
 'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-export default function AdminSignupPage() {
-  const [adminId, setAdminId] = useState('');
+export default function CustomerLoginPage() {
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const router = useRouter();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    setSuccess('');
 
     try {
-      const res = await fetch('http://localhost:3000/api/auth/admin/signup', {
+      const res = await fetch('http://localhost:3000/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          Admin_ID: adminId,
-          Password: password,
+          role: 'customer',
+          email,
+          password,
         }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || 'Signup failed');
+        setError(data.error || 'Login failed');
       } else {
-        setSuccess('Admin created successfully!');
-        setAdminId('');
-        setPassword('');
-        setTimeout(() => {
-          router.push('/admin/login');
-        }, 1500);
+        localStorage.setItem('token', data.token);
+        router.push('/customer/dashboard'); // ✅ Change this to your target page
       }
     } catch (err) {
+      setError('Something went wrong. Try again.');
       console.error(err);
-      setError('Something went wrong');
     }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
       <div className="max-w-md w-full bg-white p-6 rounded-2xl shadow-md">
-        <h2 className="text-2xl font-bold mb-6 text-center">Admin Signup</h2>
+        <h2 className="text-2xl font-bold mb-6 text-center">Customer Login</h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <input
-            type="text"
-            placeholder="Admin ID"
+            type="email"
+            placeholder="Email"
             className="w-full p-2 border border-gray-300 rounded-xl"
-            value={adminId}
-            onChange={(e) => setAdminId(e.target.value)}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             required
           />
-
           <input
             type="password"
             placeholder="Password"
@@ -67,14 +62,15 @@ export default function AdminSignupPage() {
             required
           />
 
-          {error && <p className="text-red-600 text-sm">{error}</p>}
-          {success && <p className="text-green-600 text-sm">{success}</p>}
+          {error && (
+            <p className="text-red-600 text-sm">{error}</p>
+          )}
 
           <button
             type="submit"
             className="w-full bg-blue-600 text-white p-2 rounded-xl hover:bg-blue-700 transition"
           >
-            Sign Up
+            Log In
           </button>
         </form>
       </div>
