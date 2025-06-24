@@ -15,11 +15,11 @@ export const getAllBooks = async(req, res) => {
 };
 export const createBook = async (req, res) => {
   const {
-    Book_ID, Copy_No, Title, Description,
+    Book_ID, Title, Description,
     Author_ID, Publisher_ID, Category_ID, Price, Cover_Image_URL
   } = req.body;
 
-  if(!Book_ID || !Copy_No || !Title  ||
+  if(!Book_ID || !Title  ||
      !Author_ID || !Publisher_ID || !Category_ID || !Price ) {
     return res.status(400).json({ error: 'All fields are required' });
   } 
@@ -51,24 +51,45 @@ export const createBook = async (req, res) => {
     if (categoryCheck.rows.length !== Category_ID.length) {
       return res.status(400).json({ redirect: '/api/categories', message: `One or more category IDs not found` });
     }
+
+     // ✅ Check if the book already exists
+    const existingBook = await pool.query(
+      'SELECT * FROM Book WHERE Book_ID = $1',
+      [Book_ID]
+    );
+
+    if (existingBook.rows.length > 0) {
+      // 🔁 Book exists → just update inventory count
+      await pool.query(
+        `UPDATE Inventory SET Quantity = Quantity + 1 WHERE Book_ID = $1`,
+        [Book_ID]
+      );
+      return res.status(200).json({ message: 'Book already exists. Inventory count incremented.' });
+    }
     // 1. Insert book
     const bookResult = await pool.query(
-      `INSERT INTO Book (Book_ID, Copy_No, Title, Description,  Author_ID, Publisher_ID, Price, Cover_Image_URL)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      `INSERT INTO Book (Book_ID, Title, Description,  Author_ID, Publisher_ID, Price, Cover_Image_URL)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING *`,
-      [Book_ID, Copy_No, Title, Description,  Author_ID, Publisher_ID, Price, Cover_Image_URL]
+      [Book_ID, Title, Description,  Author_ID, Publisher_ID, Price, Cover_Image_URL]
     );
 
     // 2. Insert categories
     const categoryPromises = Category_ID.map(categoryId =>
       pool.query(
-        `INSERT INTO BookCategory (Book_ID, Copy_No, Category_ID) VALUES ($1, $2, $3)`,
-        [Book_ID, Copy_No, categoryId]
+        `INSERT INTO BookCategory (Book_ID, Category_ID) VALUES ($1, $2)`,
+        [Book_ID, categoryId]
       )
     );
     await Promise.all(categoryPromises);
-    console.log('Received body:', req.body);
 
+    // Add to Inventory (initial count = 1)
+    await pool.query(
+      `INSERT INTO Inventory (Book_ID, Quantity) VALUES ($1, 1)`,
+      [Book_ID]
+    );
+
+    console.log('✅ Book and inventory inserted:', req.body);
 
     res.status(201).json({ success: true, data: bookResult.rows[0] });
  } catch (error) {
@@ -100,11 +121,11 @@ export const getBook = async(req, res) => {
 export const updateBook = async(req, res) => {
   const { book_id } = req.params;
   const {
-    Copy_No, Title, Description, ISBN,
+     Title, Description,
     Author_ID, Publisher_ID, category_id, Price, Cover_Image_URL
   } = req.body;
 
-  if(!Copy_No || !Title ||!ISBN ||
+  if(!Title ||
      !Author_ID || !Publisher_ID || !category_id || !Price ) {
     return res.status(400).json({ error: 'All fields are required' });
   } 
@@ -113,11 +134,11 @@ export const updateBook = async(req, res) => {
     // Update book details
     const result = await pool.query(
       `UPDATE Book 
-       SET Copy_No = $1, Title = $2, Description = $3, ISBN = $4,
-           Author_ID = $5, Publisher_ID = $6, Price = $7, Cover_Image_URL = $8
-       WHERE book_id = $9
+       SET Title = $1, Description = $2,
+           Author_ID = $3, Publisher_ID = $4, Price = $5, Cover_Image_URL = $6
+       WHERE book_id = $7
        RETURNING *`,
-      [Copy_No, Title, Description, ISBN, Author_ID, Publisher_ID, Price, Cover_Image_URL, book_id]
+      [Title, Description, Author_ID, Publisher_ID, Price, Cover_Image_URL, book_id]
     );
 
     if (result.rows.length === 0) {
@@ -125,12 +146,12 @@ export const updateBook = async(req, res) => {
     }
 
     // Update categories
-    await pool.query(`DELETE FROM BookCategory WHERE book_id = $1 AND Copy_No = $2`, [book_id, Copy_No]);
-    
+    await pool.query(`DELETE FROM BookCategory WHERE book_id = $1`, [book_id]);
+
     const categoryPromises = category_id.map(categoryId =>
       pool.query(
-        `INSERT INTO BookCategory (book_id, Copy_No, category_id) VALUES ($1, $2, $3)`,
-        [book_id, Copy_No, categoryId]
+        `INSERT INTO BookCategory (book_id, category_id) VALUES ($1, $2)`,
+        [book_id, categoryId]
       )
     );
     await Promise.all(categoryPromises);
