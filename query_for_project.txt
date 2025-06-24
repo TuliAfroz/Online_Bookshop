@@ -1,0 +1,25 @@
+INSERT INTO Author (Author_ID, Name) VALUES (1, 'William Shakespeare');
+INSERT INTO Publisher (Publisher_ID, Name) VALUES (1, 'Penguin Books');
+INSERT INTO Category (Category_ID, Category_Name) VALUES (1, 'Drama'), (2, 'Romance');
+
+-- Step 1: Drop the existing constraint by name
+ALTER TABLE BookCategory
+DROP CONSTRAINT bookcategory_book_id_copy_no_fkey;
+
+-- Step 2: Re-add it with ON DELETE CASCADE
+ALTER TABLE BookCategory
+ADD CONSTRAINT bookcategory_book_id_copy_no_fkey
+FOREIGN KEY (Book_ID, Copy_No)
+REFERENCES Book(Book_ID, Copy_No)
+ON DELETE CASCADE;
+
+-- Step 1: Drop the old column if you don't need existing data
+ALTER TABLE customer DROP COLUMN customer_id;
+
+-- Step 2: Re-add Customer with auto-increment
+ALTER TABLE customer
+ADD COLUMN customer_id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY;
+
+ALTER TABLE customer
+ADD CONSTRAINT unique_customer_email UNIQUE (email);
+

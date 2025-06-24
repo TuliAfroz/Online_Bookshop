@@ -26,6 +26,15 @@ export const signupAdmin = async (req, res) => {
 export const signupCustomer = async (req, res) => {
   const { Customer_Name, Email, Password, Address, Phone_No } = req.body;
   try {
+    // Check if email already exists
+    const check = await pool.query(
+      'SELECT * FROM Customer WHERE Email = $1',
+      [Email]
+    );
+
+    if (check.rows.length > 0) {
+      return res.status(400).json({ error: 'This email already has an account' });
+    }
     const hashedPassword = await bcrypt.hash(Password, 10);
     const result = await pool.query(
       `INSERT INTO Customer (Customer_Name, Email, Password, Address, Phone_No)
