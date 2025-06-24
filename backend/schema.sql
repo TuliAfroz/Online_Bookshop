@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS Admin (
 
 CREATE TABLE IF NOT EXISTS Book (
   Book_ID         INT,
-  Copy_No         INT,
+  --Copy_No         INT,
   Title           VARCHAR NOT NULL,
   Description     VARCHAR,
   ISBN            VARCHAR UNIQUE NOT NULL,
@@ -40,15 +40,15 @@ CREATE TABLE IF NOT EXISTS Book (
   Author_ID       INT,
   Publisher_ID    INT,
   Price           DECIMAL NOT NULL,
-  PRIMARY KEY (Book_ID, Copy_No)
+  PRIMARY KEY (Book_ID)
 );
 
 CREATE TABLE IF NOT EXISTS BookCategory (
   Book_ID   INT,
-  Copy_No   INT,
+  --Copy_No   INT,
   Category_ID INT,
-  PRIMARY KEY (Book_ID, Copy_No, Category_ID),
-  FOREIGN KEY (Book_ID, Copy_No) REFERENCES Book(Book_ID, Copy_No) ON DELETE CASCADE,
+  PRIMARY KEY (Book_ID,  Category_ID),
+  FOREIGN KEY (Book_ID) REFERENCES Book(Book_ID) ON DELETE CASCADE,
   FOREIGN KEY (Category_ID) REFERENCES Category(Category_ID)
 );
 
@@ -63,7 +63,7 @@ CREATE TABLE IF NOT EXISTS CartItem (
   CartItem_ID    INT PRIMARY KEY,
   Cart_ID        INT,
   Book_ID        INT,
-  Copy_No        INT,
+  --Copy_No        INT,
   Quantity       INT NOT NULL,
   Per_Item_Price DECIMAL NOT NULL
 );
@@ -116,19 +116,19 @@ CREATE TABLE IF NOT EXISTS Shipment (
 
 CREATE TABLE IF NOT EXISTS Inventory (
   Book_ID  INT,
-  Copy_No  INT,
-  Admin_ID INT,
+  --Copy_No  INT,
+  --Admin_ID INT,
   Quantity INT NOT NULL,
-  PRIMARY KEY (Book_ID, Copy_No)
+  PRIMARY KEY (Book_ID)
 );
 
 CREATE TABLE IF NOT EXISTS Review (
   Book_ID      INT,
-  Copy_No      INT,
+  --Copy_No      INT,
   Customer_ID  INT,
   Rating       INT NOT NULL,
   Description  VARCHAR,
-  PRIMARY KEY (Book_ID, Copy_No, Customer_ID)
+  PRIMARY KEY (Book_ID, Customer_ID)
 );
 
 -- Foreign Keys
@@ -148,7 +148,7 @@ ALTER TABLE CartItem
   ADD FOREIGN KEY (Cart_ID) REFERENCES Cart(Cart_ID);
 
 ALTER TABLE CartItem
-  ADD FOREIGN KEY (Book_ID, Copy_No) REFERENCES Book(Book_ID, Copy_No);
+  ADD FOREIGN KEY (Book_ID) REFERENCES Book(Book_ID);
 
 ALTER TABLE Orders
   ADD FOREIGN KEY (Customer_ID) REFERENCES Customer(Customer_ID);
@@ -190,13 +190,13 @@ ALTER TABLE Shipment
   ADD FOREIGN KEY (Admin_ID) REFERENCES Admin(Admin_ID);
 
 ALTER TABLE Inventory
-  ADD FOREIGN KEY (Book_ID, Copy_No) REFERENCES Book(Book_ID, Copy_No);
+  ADD FOREIGN KEY (Book_ID) REFERENCES Book(Book_ID);
 
 --ALTER TABLE Inventory
   --ADD FOREIGN KEY (Admin_ID) REFERENCES Admin(Admin_ID);
 
 ALTER TABLE Review
-  ADD FOREIGN KEY (Book_ID, Copy_No) REFERENCES Book(Book_ID, Copy_No);
+  ADD FOREIGN KEY (Book_ID) REFERENCES Book(Book_ID);
 
 ALTER TABLE Review
   ADD FOREIGN KEY (Customer_ID) REFERENCES Customer(Customer_ID);
