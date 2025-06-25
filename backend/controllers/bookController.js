@@ -31,7 +31,8 @@ export const createBook = async (req, res) => {
       [Author_ID]
     );
     if (authorCheck.rows.length === 0) {
-      return res.status(307).json({ redirect: '/api/authors', message: `Author ID ${Author_ID} not found` });
+      return res.status(200).json({ redirect: '/admin/dashboard/section/AddAuthorForm', message: `Author ID ${Author_ID} not found. Please add the author.` });
+
     }
 
     // Check if Publisher exists
@@ -183,6 +184,29 @@ export const deleteBook = async(req, res) => {
     res.status(200).json({ success: true, data: result.rows[0] });
   } catch (error) {
     console.error('Error deleting book:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+export const updateInventory = async (req, res) => {
+  const { book_id } = req.params;
+  const { quantity, price } = req.body;
+
+  if (quantity == null && price == null) {
+    return res.status(400).json({ error: 'Nothing to update' });
+  }
+
+  try {
+    if (quantity != null) {
+      await pool.query(`UPDATE Inventory SET Quantity = $1 WHERE Book_ID = $2`, [quantity, book_id]);
+    }
+    if (price != null) {
+      await pool.query(`UPDATE Book SET Price = $1 WHERE Book_ID = $2`, [price, book_id]);
+    }
+
+    res.status(200).json({ message: 'Inventory updated successfully' });
+  } catch (err) {
+    console.error('❌ Error updating inventory:', err);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };

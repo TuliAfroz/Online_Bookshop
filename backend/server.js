@@ -10,6 +10,7 @@ import authorRoutes from './routes/authorRoutes.js';
 import categoryRoutes from './routes/categoryRoutes.js';
 import publisherRoutes from './routes/publisherRoutes.js';
 import cartRoutes from './routes/cartRoutes.js';
+import inventoryRoutes from './routes/inventoryRoutes.js';
 
 import { readFile } from 'fs/promises';
 import pool from './config/db.js';
@@ -37,6 +38,7 @@ app.use('/api/authors', authorRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/publishers', publisherRoutes);
 app.use('/api/cart', cartRoutes);
+app.use('/api/inventory', inventoryRoutes);
 
 export async function initializeDB() {
   try {

@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation'; // ← import router
 
 export default function CustomerSignup() {
   const [form, setForm] = useState({
@@ -11,6 +12,7 @@ export default function CustomerSignup() {
   });
 
   const [message, setMessage] = useState('');
+  const router = useRouter(); // ← initialize router
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -28,14 +30,10 @@ export default function CustomerSignup() {
 
       const data = await res.json();
       if (res.ok) {
-        setMessage('✅ Signup successful!');
-        setForm({
-          Customer_Name: '',
-          Email: '',
-          Password: '',
-          Address: '',
-          Phone_No: ''
-        });
+        setMessage('✅ Signup successful! Redirecting...');
+        setTimeout(() => {
+          router.push('/customer/login'); // ← redirect after 1.5s
+        }, 1500);
       } else {
         setMessage(`❌ ${data.error}`);
       }
