@@ -145,3 +145,59 @@ export const getCartWithItems = async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+
+// Function to remove an item from the cart
+
+export const removeFromCart = async (req, res) => {
+  const { customer_id, book_id } = req.body;
+
+  if (!customer_id || !book_id) {
+    return res.status(400).json({ error: 'customer_id and book_id are required' });
+  }
+
+  try {
+    // 1. Get the latest cart
+    const cartResult = await pool.query(
+      `SELECT Cart_ID FROM Cart WHERE Customer_ID = $1 ORDER BY Created_At DESC LIMIT 1`,
+      [customer_id]
+    );
+
+    if (cartResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Cart not found for this customer' });
+    }
+
+    const cartId = cartResult.rows[0].cart_id;
+
+    // 2. Check current quantity
+    const itemRes = await pool.query(
+      `SELECT Quantity FROM CartItem WHERE Cart_ID = $1 AND Book_ID = $2`,
+      [cartId, book_id]
+    );
+
+    if (itemRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Item not found in cart' });
+    }
+
+    const currentQty = itemRes.rows[0].quantity;
+
+    if (currentQty > 1) {
+      // 3. Decrease quantity
+      await pool.query(
+        `UPDATE CartItem SET Quantity = Quantity - 1 WHERE Cart_ID = $1 AND Book_ID = $2`,
+        [cartId, book_id]
+      );
+      return res.status(200).json({ success: true, message: 'Item quantity decreased by 1' });
+    } else {
+      // 4. Quantity is 1 → remove item
+      await pool.query(
+        `DELETE FROM CartItem WHERE Cart_ID = $1 AND Book_ID = $2`,
+        [cartId, book_id]
+      );
+      return res.status(200).json({ success: true, message: 'Item removed from cart' });
+    }
+
+  } catch (error) {
+    console.error('❌ Error removing from cart:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};

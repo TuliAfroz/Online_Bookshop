@@ -8,12 +8,11 @@ export default function BookSearch() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Function to fetch all books initially
   const fetchBooks = async () => {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('http://localhost:3000/api/books/search'); // No query parameter, fetch all books
+      const res = await fetch('http://localhost:3000/api/books/search');
       const contentType = res.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
         throw new Error('Invalid response format. Server returned HTML instead of JSON.');
@@ -33,15 +32,20 @@ export default function BookSearch() {
     }
   };
 
-  // Fetch all books when component is first rendered
   useEffect(() => {
-    fetchBooks();
+    fetchBooks(); // Initial load
   }, []);
 
-  // Handle search logic
+  useEffect(() => {
+    const delayDebounce = setTimeout(() => {
+      handleSearch(); // Call the same function
+    }, 300);
+
+    return () => clearTimeout(delayDebounce);
+  }, [searchTerm]);
+
   const handleSearch = async () => {
     if (!searchTerm.trim()) {
-      // If the search term is empty, fetch all books again
       fetchBooks();
       return;
     }
@@ -76,10 +80,10 @@ export default function BookSearch() {
       <div className="flex gap-2 mb-4">
         <input
           type="text"
+          placeholder="Search by title, author, or category..."
+          className="w-full p-2 mb-4 border border-gray-300 rounded-xl"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder="Search by title, author, or category"
-          className="w-full border border-gray-300 rounded-lg p-2"
         />
         <button
           onClick={handleSearch}
@@ -102,7 +106,9 @@ export default function BookSearch() {
             <p className="font-semibold text-lg">{book.title}</p>
             <p className="text-sm text-gray-700">Author: {book.author_name}</p>
             <p className="text-sm text-gray-700">Price: ${book.price}</p>
-            <p className="text-sm text-yellow-700">Rating: ⭐ {parseFloat(book.average_rating).toFixed(1)}</p>
+            <p className="text-sm text-yellow-700">
+              Rating: ⭐ {parseFloat(book.average_rating).toFixed(1)}
+            </p>
           </li>
         ))}
       </ul>

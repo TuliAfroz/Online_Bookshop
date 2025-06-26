@@ -9,51 +9,72 @@ export default function CustomerDashboard() {
   const [cart, setCart] = useState([]);
   const [cartVisible, setCartVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const customerId = getCustomerIdFromToken();
 
+  // Fetch books and cart on load
   useEffect(() => {
-    const fetchBooks = async () => {
-      try {
-        const res = await fetch('http://localhost:3000/api/books');
-        const data = await res.json();
-        setBooks(data.data);
-        setFilteredBooks(data.data);
-      } catch (error) {
-        console.error('Failed to fetch books:', error);
-      }
-    };
-
-    const fetchCart = async () => {
-      if (!customerId) return;
-      try {
-        const res = await fetch(`http://localhost:3000/api/cart/${customerId}`);
-        const data = await res.json();
-        setCart(data.items || []);
-      } catch (err) {
-        console.error('Failed to fetch cart:', err);
-      }
-    };
-
     fetchBooks();
-    fetchCart();
+    if (customerId) fetchCart();
   }, [customerId]);
 
+  // Debounced search effect
   useEffect(() => {
-    const query = searchQuery.toLowerCase();
-    const filtered = books.filter(book =>
-      book.title?.toLowerCase().includes(query)
-    );
-    setFilteredBooks(filtered);
-  }, [searchQuery, books]);
+    const delayDebounce = setTimeout(() => {
+      handleSearch();
+    }, 300);
+    return () => clearTimeout(delayDebounce);
+  }, [searchQuery]);
+
+  const fetchBooks = async () => {
+    try {
+      const res = await fetch('http://localhost:3000/api/books');
+      const data = await res.json();
+      setBooks(data.data || []);
+      setFilteredBooks(data.data || []);
+    } catch (error) {
+      console.error('Failed to fetch books:', error);
+    }
+  };
+
+  const fetchCart = async () => {
+    try {
+      const res = await fetch(`http://localhost:3000/api/cart/${customerId}`);
+      const data = await res.json();
+      setCart(data.items || []);
+    } catch (err) {
+      console.error('Failed to fetch cart:', err);
+    }
+  };
+
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) {
+      setFilteredBooks(books);
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch(`http://localhost:3000/api/books/search?query=${encodeURIComponent(searchQuery)}`);
+      const data = await res.json();
+      setFilteredBooks(data.data || []);
+    } catch (err) {
+      console.error('Search error:', err);
+      setError(err.message || 'Something went wrong.');
+      setFilteredBooks([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const addToCart = async (bookId) => {
     try {
       const res = await fetch('http://localhost:3000/api/cart/add', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           customer_id: customerId,
           cart_items: [{ book_id: bookId, quantity: 1 }]
@@ -64,12 +85,7 @@ export default function CustomerDashboard() {
         const err = await res.json();
         alert(err.error);
       } else {
-        const data = await res.json();
-        console.log('Added to cart:', data);
-        // Re-fetch cart
-        const cartRes = await fetch(`http://localhost:3000/api/cart/${customerId}`);
-        const cartData = await cartRes.json();
-        setCart(cartData.items || []);
+        fetchCart();
       }
     } catch (error) {
       console.error('Add to cart failed:', error);
@@ -117,13 +133,25 @@ export default function CustomerDashboard() {
         </div>
       )}
 
-      <input
-        type="text"
-        placeholder="Search books by title..."
-        className="w-full p-3 mb-6 border border-gray-300 rounded-xl"
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-      />
+      <div className="flex gap-2 mb-6">
+        <input
+          type="text"
+          placeholder="Search books by title, author, category..."
+          className="w-full p-3 border border-gray-300 rounded-xl"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+        <button
+          onClick={handleSearch}
+          className="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700"
+        >
+          Search
+        </button>
+      </div>
+
+      {loading && <p>Searching...</p>}
+      {error && <p className="text-red-600">{error}</p>}
+      {!loading && filteredBooks.length === 0 && !error && <p>No books found.</p>}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredBooks.map((book) => (
@@ -139,13 +167,9 @@ export default function CustomerDashboard() {
               />
             )}
             <h2 className="text-xl font-semibold mb-1">{book.title}</h2>
-            <p className="text-gray-600 text-sm mb-2">
-              {book.description || 'No description available.'}
-            </p>
+            <p className="text-gray-600 text-sm mb-2">{book.description || 'No description available.'}</p>
             <p className="text-blue-600 font-bold mb-2">${book.price}</p>
-            <p className="text-sm text-gray-500 mb-2">
-              In Cart: {getQuantityInCart(book.book_id)}
-            </p>
+            <p className="text-sm text-gray-500 mb-2">In Cart: {getQuantityInCart(book.book_id)}</p>
             <button
               onClick={() => addToCart(book.book_id)}
               className="bg-green-500 text-white px-4 py-2 rounded-xl"
