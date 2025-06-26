@@ -172,6 +172,11 @@ export const deleteBook = async(req, res) => {
   const { book_id } = req.params;
 
   try {
+
+    await pool.query(`DELETE FROM CartItem WHERE Book_ID = $1`, [book_id]);
+    await pool.query(`DELETE FROM Inventory WHERE Book_ID = $1`, [book_id]);
+    await pool.query(`DELETE FROM BookCategory WHERE Book_ID = $1`, [book_id]);
+    await pool.query(`DELETE FROM Review WHERE Book_ID = $1`, [book_id]);
     const result = await pool.query(
       `DELETE FROM Book WHERE book_id = $1 RETURNING *`,
       [book_id]

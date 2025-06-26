@@ -20,7 +20,7 @@ ALTER COLUMN customer_id ADD GENERATED ALWAYS AS IDENTITY;
 ALTER TABLE customer
 ADD CONSTRAINT unique_customer_email UNIQUE (email);
 
-//==========//
+--==========--
 PORT=3000
 
 PGHOST=localhost
@@ -31,3 +31,10 @@ PGDATABASE=postgres
 
 JWT_SECRET=aBcD123eFgH??
 
+ALTER TABLE Inventory
+DROP CONSTRAINT IF EXISTS inventory_book_id_fkey;
+
+ALTER TABLE Inventory
+ADD CONSTRAINT inventory_book_id_fkey
+FOREIGN KEY (Book_ID) REFERENCES Book(Book_ID)
+ON DELETE CASCADE;

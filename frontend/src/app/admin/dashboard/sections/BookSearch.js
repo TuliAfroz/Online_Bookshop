@@ -47,7 +47,7 @@ export default function BookSearch() {
             >
               <p className="font-semibold">{book.title}</p>
               <p className="text-sm text-gray-600">
-                Book ID: {book.book_id}, Copy No: {book.copy_no}
+                Book ID: {book.book_id}
               </p>
               {book.description && (
                 <p className="text-sm mt-1 text-gray-700">{book.description}</p>
