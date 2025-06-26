@@ -37,7 +37,7 @@ export default function BookList() {
               <h3 className="text-lg font-semibold mb-1">{book.title}</h3>
               <p className="text-sm text-gray-600 mb-2">{book.description}</p>
               <p className="text-sm text-gray-800">
-                <span className="font-medium">Price:</span> ${book.price}
+                <span className="font-medium">Price:</span> {book.price}৳
               </p>
               <p className="text-sm text-gray-600">
                 <span className="font-medium">Author ID:</span> {book.author_id}
