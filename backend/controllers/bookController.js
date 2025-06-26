@@ -220,31 +220,49 @@ export const updateInventory = async (req, res) => {
 export const searchBooks = async (req, res) => {
   const { query } = req.query;
 
-  if (!query) {
-    return res.status(400).json({ error: 'Search query is required' });
-  }
-
   try {
-    const result = await pool.query(`
-      SELECT 
-        b.book_id,
-        b.title,
-        a.author_name,
-        b.price,
-        b.cover_image_url,
-        COALESCE(AVG(r.rating), 0) AS average_rating
-      FROM book b
-      LEFT JOIN author a ON b.author_id = a.author_id
-      LEFT JOIN bookcategory bc ON b.book_id = bc.book_id
-      LEFT JOIN category c ON bc.category_id = c.category_id
-      LEFT JOIN review r ON b.book_id = r.book_id
-      WHERE
-        LOWER(b.title) LIKE LOWER($1)
-        OR LOWER(a.author_name) LIKE LOWER($1)
-        OR LOWER(c.category_name) LIKE LOWER($1)
-      GROUP BY b.book_id, b.title,a.author_name,b.price, b.cover_image_url
-      ORDER BY b.title ASC
-    `, [`%${query}%`]);
+    let result;
+    if (!query) {
+      // No query means fetch all books
+      result = await pool.query(`
+        SELECT 
+          b.book_id,
+          b.title,
+          a.author_name,
+          b.price,
+          b.cover_image_url,
+          COALESCE(AVG(r.rating), 0) AS average_rating
+        FROM book b
+        LEFT JOIN author a ON b.author_id = a.author_id
+        LEFT JOIN bookcategory bc ON b.book_id = bc.book_id
+        LEFT JOIN category c ON bc.category_id = c.category_id
+        LEFT JOIN review r ON b.book_id = r.book_id
+        GROUP BY b.book_id, b.title, a.author_name, b.price, b.cover_image_url
+        ORDER BY b.title ASC
+      `);
+    } else {
+      // Search with the query
+      result = await pool.query(`
+        SELECT 
+          b.book_id,
+          b.title,
+          a.author_name,
+          b.price,
+          b.cover_image_url,
+          COALESCE(AVG(r.rating), 0) AS average_rating
+        FROM book b
+        LEFT JOIN author a ON b.author_id = a.author_id
+        LEFT JOIN bookcategory bc ON b.book_id = bc.book_id
+        LEFT JOIN category c ON bc.category_id = c.category_id
+        LEFT JOIN review r ON b.book_id = r.book_id
+        WHERE
+          LOWER(b.title) LIKE LOWER($1)
+          OR LOWER(a.author_name) LIKE LOWER($1)
+          OR LOWER(c.category_name) LIKE LOWER($1)
+        GROUP BY b.book_id, b.title, a.author_name, b.price, b.cover_image_url
+        ORDER BY b.title ASC
+      `, [`%${query}%`]);
+    }
 
     res.status(200).json({ success: true, data: result.rows });
   } catch (error) {
@@ -252,4 +270,3 @@ export const searchBooks = async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
-
