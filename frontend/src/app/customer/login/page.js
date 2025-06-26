@@ -1,8 +1,8 @@
-// app/customer/login/page.js
 'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Header from '@/components/Header';
 
 export default function CustomerLoginPage() {
   const [email, setEmail] = useState('');
@@ -31,7 +31,7 @@ export default function CustomerLoginPage() {
         setError(data.error || 'Login failed');
       } else {
         localStorage.setItem('token', data.token);
-        router.push('/customer/dashboard'); // ✅ Change this to your target page
+        router.push('/customer/dashboard');
       }
     } catch (err) {
       setError('Something went wrong. Try again.');
@@ -40,39 +40,44 @@ export default function CustomerLoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
-      <div className="max-w-md w-full bg-white p-6 rounded-2xl shadow-md">
-        <h2 className="text-2xl font-bold mb-6 text-center">Customer Login</h2>
+    <div className="min-h-screen bg-gray-100">
+      {/* ⬇️ Use Header here */}
+      <Header />
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            type="email"
-            placeholder="Email"
-            className="w-full p-2 border border-gray-300 rounded-xl"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            className="w-full p-2 border border-gray-300 rounded-xl"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
+      <div className="flex items-center justify-center px-4 py-12">
+        <div className="max-w-md w-full bg-white p-6 rounded-2xl shadow-md">
+          <h2 className="text-2xl font-bold mb-6 text-center text-teal-900">Customer Login</h2>
 
-          {error && (
-            <p className="text-red-600 text-sm">{error}</p>
-          )}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <input
+              type="email"
+              placeholder="Email"
+              className="w-full p-2 border border-gray-300 rounded-xl"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+            <input
+              type="password"
+              placeholder="Password"
+              className="w-full p-2 border border-gray-300 rounded-xl"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
 
-          <button
-            type="submit"
-            className="w-full bg-blue-600 text-white p-2 rounded-xl hover:bg-blue-700 transition"
-          >
-            Log In
-          </button>
-        </form>
+            {error && (
+              <p className="text-red-600 text-sm">{error}</p>
+            )}
+
+            <button
+              type="submit"
+              className="w-full bg-blue-600 text-white p-2 rounded-xl hover:bg-blue-700 transition"
+            >
+              Log In
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );

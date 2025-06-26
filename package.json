@@ -27,6 +27,7 @@
     "express": "^5.1.0",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
+    "lucide-react": "^0.523.0",
     "morgan": "^1.10.0",
     "pg": "^8.16.0",
     "uuid": "^11.1.0"

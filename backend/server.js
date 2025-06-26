@@ -37,6 +37,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/authors', authorRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/publishers', publisherRoutes);
+app.use('/api/cart', cartRoutes);
+app.use('/api/inventory', inventoryRoutes);
 
 export async function initializeDB() {
   try {
