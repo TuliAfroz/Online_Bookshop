@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { BookOpen } from 'lucide-react';
+import Link from 'next/link';
 
 export default function HomePage() {
   const router = useRouter();
@@ -118,20 +119,31 @@ export default function HomePage() {
         />
       </div>
 
-      {/* Horizontal Menu */}
-      <div className="flex justify-center space-x-4 text-gray-700 font-semibold mb-4 text-sm">
-        <button className="hover:underline">Author</button>
-        <button className="hover:underline">Publication</button>
-        <button className="hover:underline">Offers</button>
-        <button className="hover:underline">Academic Books</button>
-        <button className="hover:underline">Books In Stock</button>
-        <button className="hover:underline">New Books</button>
+      {/* Horizontal Menu as Buttons */}
+      <div className="flex justify-center flex-wrap gap-2 mb-6">
+        {[
+          'Author',
+          'Publication',
+          'Offers',
+          'Academic Books',
+          'Books In Stock',
+          'New Books'
+        ].map((label) => (
+          <button
+            key={label}
+            className="bg-white text-gray-800 border border-gray-300 px-4 py-2 rounded-xl shadow hover:bg-gray-100 transition"
+          >
+            {label}
+          </button>
+        ))}
       </div>
+
 
       {/* Featured Books */}
       <div className="px-6 pb-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {filteredBooks.map((book) => (
-          <div key={book.book_id} className="bg-white rounded-lg shadow p-4">
+      {filteredBooks.map((book) => (
+        <Link href={`/book/${book.book_id}`} key={book.book_id}>
+          <div className="bg-white rounded-xl shadow hover:shadow-2xl transform hover:scale-105 transition duration-300 ease-in-out p-4 cursor-pointer">
             {book.cover_image_url?.startsWith('http') && (
               <img
                 src={book.cover_image_url}
@@ -140,10 +152,12 @@ export default function HomePage() {
               />
             )}
             <h3 className="font-bold text-lg">{book.title}</h3>
-            <p className="text-sm text-gray-500 mb-1">{book.description}</p>
+            <p className="text-sm text-gray-500 mb-1">{book.author_name}</p>
             <p className="text-blue-600 font-bold">৳{book.price}</p>
           </div>
-        ))}
+        </Link>
+      ))}
+
       </div>
     </div>
   );

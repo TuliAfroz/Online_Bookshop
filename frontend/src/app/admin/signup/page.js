@@ -76,7 +76,7 @@ export default function AdminSignupPage() {
 
             <button
               type="submit"
-              className="w-full bg-blue-600 text-white p-2 rounded-xl hover:bg-blue-700 transition"
+              className="w-full bg-teal-800 text-white p-2 rounded-xl hover:bg-teal-700 transition"
             >
               Sign Up
             </button>
