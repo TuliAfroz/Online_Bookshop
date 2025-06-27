@@ -11,6 +11,7 @@ import categoryRoutes from './routes/categoryRoutes.js';
 import publisherRoutes from './routes/publisherRoutes.js';
 import cartRoutes from './routes/cartRoutes.js';
 import inventoryRoutes from './routes/inventoryRoutes.js';
+import customerRoutes from './routes/customerRoutes.js';
 
 import { readFile } from 'fs/promises';
 import pool from './config/db.js';
@@ -39,6 +40,7 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/publishers', publisherRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/inventory', inventoryRoutes);
+app.use('/api/customers', customerRoutes);
 
 export async function initializeDB() {
   try {

@@ -17,7 +17,7 @@ export const addToCart = async (req, res) => {
     if (cartRes.rows.length === 0) {
       cartId = parseInt(uuidv4().replace(/\D/g, '').slice(0, 6)); // generate numeric ID
       await pool.query(
-        `INSERT INTO Cart (Cart_ID, Customer_ID, Created_At) VALUES ($1, $2, CURRENT_DATE)`,
+        `INSERT INTO Cart (Cart_ID, Customer_ID, Created_At) VALUES ($1, $2, NOW())`,
         [cartId, customer_id]
       );
     } else {
@@ -111,15 +111,20 @@ export const getCartWithItems = async (req, res) => {
     // 2. Get items in this cart
     const itemsResult = await pool.query(
       `SELECT 
-         ci.CartItem_ID,
-         ci.Book_ID,
-         b.Title,
-         ci.Quantity,
-         ci.Per_Item_Price,
-         (ci.Quantity * ci.Per_Item_Price) AS total
-       FROM CartItem ci
-       JOIN Book b ON ci.Book_ID = b.Book_ID
-       WHERE ci.Cart_ID = $1`,
+        ci.CartItem_ID,
+        ci.Book_ID,
+        b.Title,
+        b.Cover_Image_URL,
+        a.Author_Name,
+        ci.Quantity,
+        ci.Per_Item_Price,
+        (ci.Quantity * ci.Per_Item_Price) AS total,
+        i.Quantity AS available_stock
+      FROM CartItem ci
+      JOIN Book b ON ci.Book_ID = b.Book_ID
+      JOIN Author a ON b.Author_ID = a.Author_ID
+      JOIN Inventory i ON b.Book_ID = i.Book_ID
+      WHERE ci.Cart_ID = $1`,
       [cart.cart_id]
     );
 

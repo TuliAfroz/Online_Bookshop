@@ -126,8 +126,7 @@ export default function HomePage() {
           'Publication',
           'Offers',
           'Academic Books',
-          'Books In Stock',
-          'New Books'
+          'Books In Stock'
         ].map((label) => (
           <button
             key={label}
