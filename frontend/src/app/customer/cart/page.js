@@ -83,10 +83,22 @@ export default function CustomerCartPage() {
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold">{item.title}</h3>
                   <p className="text-gray-600 mb-1">{item.author_name}</p>
+                  <p className="text-sm font-bold text-blue-700 mb-1">
+                    ৳{Number(item.per_item_price).toFixed(2)} 
+                  </p>
+
                   <p className="text-red-500 text-sm">
                     Only {item.available_stock} copies available
                   </p>
                 </div>
+
+                {/* Delete icon */}
+                <button
+                  onClick={() => handleUpdateQuantity(item.book_id, 'remove')}
+                  className="text-gray-500 hover:text-red-600"
+                >
+                  <Trash2 />
+                </button>
 
                 {/* Quantity buttons */}
                 <div className="flex items-center border rounded overflow-hidden">
@@ -105,13 +117,12 @@ export default function CustomerCartPage() {
                   </button>
                 </div>
 
-                {/* Delete icon */}
-                <button
-                  onClick={() => handleUpdateQuantity(item.book_id, 'remove')}
-                  className="text-gray-500 hover:text-red-600"
-                >
-                  <Trash2 />
-                </button>
+                
+                {/* Item price (quantity * price) */}
+                <div className="text-sm font-bold text-black mr-4 whitespace-nowrap">
+                  ৳{(item.quantity * item.per_item_price).toFixed(2)}
+                </div>
+
               </div>
             ))}
 
