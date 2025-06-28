@@ -23,7 +23,7 @@ export default function CustomerProfile() {
   const handleChangePassword = async () => {
     if (!newPassword) return;
     const res = await fetch(`http://localhost:3000/api/customers/${customerId}/password`, {
-        method: 'PATCH',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ newPassword })
         });

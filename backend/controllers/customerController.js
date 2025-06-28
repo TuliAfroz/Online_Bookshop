@@ -2,35 +2,13 @@ import pool from '../config/db.js';
 import bcrypt from 'bcrypt';
 
 
-export const getCustomerById = async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    const result = await pool.query(
-      `SELECT Customer_Name AS name
-      FROM Customer
-      WHERE Customer_ID = $1;
-      `,
-      [id]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Customer not found' });
-    }
-
-    res.status(200).json({ success: true, data: result.rows[0] });
-  } catch (error) {
-    console.error('Error fetching customer:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
-  }
-};
 // Get customer profile (excluding password)
 export const getCustomerProfile = async (req, res) => {
   const { id } = req.params;
 
   try {
     const result = await pool.query(
-      `SELECT Customer_ID, Customer_Name, Phone_No, Address, Email FROM Customer WHERE Customer_ID = $1`,
+      `SELECT customer_id, customer_name, phone_No, address, email FROM Customer WHERE Customer_ID = $1`,
       [id]
     );
 

@@ -25,7 +25,7 @@ export default function CustomerDashboard() {
     fetch(`http://localhost:3000/api/customers/${customerId}`)
       .then(res => res.json())
       .then(data => {
-        if (data?.success && data.data) setCustomerName(data.data.name);
+        if (data?.success && data.data) setCustomerName(data.data.customer_name);
       })
       .catch(console.error);
   }, []);
