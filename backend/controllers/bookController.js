@@ -3,8 +3,15 @@ import pool from '../config/db.js';
 export const getAllBooks = async(req, res) => {
   try {
     const result = await pool.query(
-      `SELECT * FROM Book 
-       ORDER BY book_id ASC`
+      `SELECT 
+        b.book_id,
+        b.title,
+        b.price,
+        b.cover_image_url,
+        a.author_name
+      FROM Book b
+      JOIN Author a ON b.author_id = a.author_id
+      ORDER BY b.book_id ASC`
     );
     console.log('Books fetched successfully:', result.rows);
     res.status(200).json({ success: true, data: result.rows});  
@@ -104,24 +111,36 @@ export const createBook = async (req, res) => {
 
 
 
-export const getBook = async(req, res) => {
-
+export const getBook = async (req, res) => {
   const { book_id } = req.params;
   try {
     const result = await pool.query(
-      `SELECT * FROM Book WHERE book_id = $1`,
+      `
+      SELECT b.*, a.author_name, 
+        COALESCE(i.quantity, 0) as quantity,
+        ARRAY_AGG(c.category_name) AS categories
+      FROM Book b
+      LEFT JOIN Author a ON b.author_id = a.author_id
+      LEFT JOIN Inventory i ON b.book_id = i.book_id
+      LEFT JOIN BookCategory bc ON b.book_id = bc.book_id
+      LEFT JOIN Category c ON bc.category_id = c.category_id
+      WHERE b.book_id = $1
+      GROUP BY b.book_id, a.author_name, i.quantity
+      `,
       [book_id]
     );
+
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Book not found' });
     }
-    console.log('Book fetched successfully:', result.rows[0]);
+
     res.status(200).json({ success: true, data: result.rows[0] });
   } catch (error) {
-    console.error('Error fetching book:', error);
+    console.error('Error fetching book details:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+
 export const updateBook = async(req, res) => {
   const { book_id } = req.params;
   const {
