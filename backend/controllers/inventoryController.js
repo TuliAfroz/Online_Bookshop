@@ -7,7 +7,7 @@ export const getInventoryList = async (req, res) => {
       `SELECT i.book_id, b.title, i.quantity
        FROM inventory i
        JOIN book b ON i.book_id = b.book_id
-       ORDER BY b.title ASC`
+       ORDER BY b.book_id ASC`
     );
     res.status(200).json({ success: true, data: result.rows });
   } catch (error) {

@@ -46,7 +46,7 @@ export default function AdminSignupPage() {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <Header /> {/* ✅ Inserted shared header here */}
+      <Header /> 
 
       <div className="flex items-center justify-center px-4 py-10">
         <div className="max-w-md w-full bg-white p-6 rounded-2xl shadow-md">
@@ -76,7 +76,7 @@ export default function AdminSignupPage() {
 
             <button
               type="submit"
-              className="w-full bg-teal-800 text-white p-2 rounded-xl hover:bg-teal-700 transition"
+              className="w-full bg-slate-700 text-white p-2 rounded-xl hover:bg-slate-600 transition"
             >
               Sign Up
             </button>

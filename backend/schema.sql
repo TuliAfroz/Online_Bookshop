@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS Book (
   Cover_Image_URL VARCHAR,
   Author_ID       INT,
   Publisher_ID    INT,
-  Price           DECIMAL NOT NULL,
+  Price           FLOAT NOT NULL,
   PRIMARY KEY (Book_ID)
 );
 
@@ -65,25 +65,25 @@ CREATE TABLE IF NOT EXISTS CartItem (
   Book_ID        INT,
   --Copy_No        INT,
   Quantity       INT NOT NULL,
-  Per_Item_Price DECIMAL NOT NULL
+  Per_Item_Price FLOAT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS Orders (
   Order_ID       INT PRIMARY KEY,
   Customer_ID    INT,
-  Gift_Card_ID   INT,
+ -- Gift_Card_ID   INT,
   Cart_ID        INT,
   Date           DATE,
-  SubTotal_Price DECIMAL,
-  Discount       DECIMAL,
+  SubTotal_Price FLOAT,
+  Discount       FLOAT,
   Points_Used    INT,
-  Total_Price    DECIMAL
+  Total_Price    FLOAT
 );
 
 CREATE TABLE IF NOT EXISTS Payment (
   Transaction_ID       VARCHAR PRIMARY KEY,
   Order_ID             INT,
-  Amount               DECIMAL NOT NULL,
+  Amount               FLOAT NOT NULL,
   Date                 DATE,
   Method               VARCHAR NOT NULL,
   Payer_Customer_ID    INT,
@@ -96,7 +96,7 @@ CREATE TABLE IF NOT EXISTS Payment (
 CREATE TABLE IF NOT EXISTS GiftCard (
   Card_ID     INT PRIMARY KEY,
   Customer_ID INT,
-  Amount      DECIMAL NOT NULL
+  Amount      FLOAT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS Point (
@@ -153,8 +153,8 @@ ALTER TABLE CartItem
 ALTER TABLE Orders
   ADD FOREIGN KEY (Customer_ID) REFERENCES Customer(Customer_ID);
 
-ALTER TABLE Orders
-  ADD FOREIGN KEY (Gift_Card_ID) REFERENCES GiftCard(Card_ID);
+--ALTER TABLE Orders
+--  ADD FOREIGN KEY (Gift_Card_ID) REFERENCES GiftCard(Card_ID);
 
 ALTER TABLE Orders
   ADD FOREIGN KEY (Cart_ID) REFERENCES Cart(Cart_ID);

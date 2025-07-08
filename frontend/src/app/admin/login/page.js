@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Header from '@/components/Header'; // ✅ Added import
+import Header from '@/components/Header'; 
 
 export default function AdminLoginPage() {
   const [adminId, setAdminId] = useState('');
@@ -31,7 +31,7 @@ export default function AdminLoginPage() {
         setError(data.error || 'Login failed');
       } else {
         localStorage.setItem('token', data.token);
-        router.push('/admin/dashboard'); // ✅ You can create this page later
+        router.push('/admin/dashboard'); 
       }
     } catch (err) {
       console.error(err);
@@ -41,7 +41,7 @@ export default function AdminLoginPage() {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <Header /> {/* ✅ Added header here */}
+      <Header /> 
 
       <div className="flex items-center justify-center px-4 py-10">
         <div className="max-w-md w-full bg-white p-6 rounded-2xl shadow-md">
@@ -70,7 +70,7 @@ export default function AdminLoginPage() {
 
             <button
               type="submit"
-              className="w-full bg-teal-800 text-white p-2 rounded-xl hover:bg-teal-700 transition"
+              className="w-full bg-slate-700 text-white p-2 rounded-xl hover:bg-slate-600 transition"
             >
               Log In
             </button>

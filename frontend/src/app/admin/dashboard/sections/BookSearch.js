@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 
 export default function BookSearch() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -33,12 +34,12 @@ export default function BookSearch() {
   };
 
   useEffect(() => {
-    fetchBooks(); // Initial load
+    fetchBooks();
   }, []);
 
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
-      handleSearch(); // Call the same function
+      handleSearch();
     }, 300);
 
     return () => clearTimeout(delayDebounce);
@@ -75,19 +76,19 @@ export default function BookSearch() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Search Books</h1>
+    <div className="max-w-6xl mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-4 text-center">Search Books</h1>
       <div className="flex gap-2 mb-4">
         <input
           type="text"
           placeholder="Search by title, author, or category..."
-          className="w-full p-2 mb-4 border border-gray-300 rounded-xl"
+          className="w-full p-2 border border-gray-300 rounded-xl"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
         <button
           onClick={handleSearch}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+          className="bg-slate-700 text-white px-4 py-2 rounded-lg hover:bg-slate-600"
         >
           Search
         </button>
@@ -97,21 +98,31 @@ export default function BookSearch() {
       {error && <p className="text-red-600">{error}</p>}
       {!loading && books.length === 0 && !error && <p>No results found.</p>}
 
-      <ul className="space-y-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
         {books.map((book) => (
-          <li
-            key={book.book_id}
-            className="border p-4 rounded-lg shadow bg-gray-50"
-          >
-            <p className="font-semibold text-lg">{book.title}</p>
-            <p className="text-sm text-gray-700">Author: {book.author_name}</p>
-            <p className="text-sm text-gray-700">Price: ${book.price}</p>
-            <p className="text-sm text-yellow-700">
-              Rating: ⭐ {parseFloat(book.average_rating).toFixed(1)}
-            </p>
-          </li>
+          <div key={book.book_id} className="bg-white rounded-xl shadow p-4">
+            <Link href={`/book/${book.book_id}`}>
+              <div className="cursor-pointer hover:shadow-2xl transform hover:scale-105 transition duration-300 ease-in-out">
+                {book.cover_image_url?.startsWith('http') && (
+                  <img
+                    src={book.cover_image_url}
+                    alt={book.title}
+                    className="w-full h-48 object-cover rounded mb-2"
+                  />
+                )}
+                <h3 className="font-bold text-lg">{book.title}</h3>
+                <p className="text-sm text-gray-500 mb-1">{book.author_name}</p>
+                <p className="text-slate-600 font-bold">৳{book.price}</p>
+                {book.average_rating && (
+                  <p className="text-yellow-600 text-sm mt-1">
+                    ⭐ {parseFloat(book.average_rating).toFixed(1)}
+                  </p>
+                )}
+              </div>
+            </Link>
+          </div>
         ))}
-      </ul>
+      </div>
     </div>
   );
 }

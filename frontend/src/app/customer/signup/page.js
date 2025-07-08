@@ -102,7 +102,7 @@ export default function CustomerSignup() {
 
           <button
             type="submit"
-            className="w-full bg-teal-800 text-white py-2 rounded hover:bg-teal-700 transition"
+            className="w-full bg-slate-700 text-white py-2 rounded hover:bg-slate-600 transition"
           >
             Sign Up
           </button>

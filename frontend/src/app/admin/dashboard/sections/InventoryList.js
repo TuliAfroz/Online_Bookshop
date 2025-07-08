@@ -24,7 +24,7 @@ export default function InventoryList() {
 
   return (
     <div>
-      <h2 className="text-2xl font-semibold mb-4">📦 Inventory List</h2>
+      <h2 className="text-2xl font-bold mb-4 text-center">Inventory List</h2>
       {inventory.length === 0 ? (
         <p className="text-gray-500">No inventory data available.</p>
       ) : (

@@ -38,43 +38,55 @@ export default function AddPublisherForm() {
   };
 
   return (
-    <div className="bg-white p-4 rounded-2xl shadow-md mt-4">
-      <h2 className="text-xl font-semibold mb-4">Add Publisher</h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <input
-          type="number"
-          name="Publisher_ID"
-          placeholder="Publisher ID"
-          value={form.Publisher_ID}
-          onChange={handleChange}
-          required
-          className="border p-2 w-full rounded"
-        />
-        <input
-          type="text"
-          name="Publisher_Name"
-          placeholder="Publisher Name"
-          value={form.Publisher_Name}
-          onChange={handleChange}
-          required
-          className="border p-2 w-full rounded"
-        />
-        <input
-          type="text"
-          name="Phone_No"
-          placeholder="Phone Number (optional)"
-          value={form.Phone_No}
-          onChange={handleChange}
-          className="border p-2 w-full rounded"
-        />
-        <button
-          type="submit"
-          className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded"
+    <form
+      onSubmit={handleSubmit}
+      className="max-w-md mx-auto space-y-5 p-6 rounded-xl border border-gray-300"
+      style={{ marginTop: '40px' }} // optional top margin
+    >
+      <h2 className="text-2xl font-semibold mb-4 text-center">Add Publisher</h2>
+
+      <input
+        type="number"
+        name="Publisher_ID"
+        placeholder="Publisher ID"
+        value={form.Publisher_ID}
+        onChange={handleChange}
+        required
+        className="border p-2 w-full rounded-xl"
+      />
+      <input
+        type="text"
+        name="Publisher_Name"
+        placeholder="Publisher Name"
+        value={form.Publisher_Name}
+        onChange={handleChange}
+        required
+        className="border p-2 w-full rounded-xl"
+      />
+      <input
+        type="text"
+        name="Phone_No"
+        placeholder="Phone Number (optional)"
+        value={form.Phone_No}
+        onChange={handleChange}
+        className="border p-2 w-full rounded-xl"
+      />
+      <button
+        type="submit"
+        className="bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-xl w-full transition"
+      >
+        Add Publisher
+      </button>
+
+      {message && (
+        <p
+          className={`text-center text-sm mt-3 ${
+            message.startsWith('✅') ? 'text-green-700' : 'text-red-700'
+          }`}
         >
-          Add Publisher
-        </button>
-      </form>
-      {message && <p className="mt-2 text-sm text-gray-700">{message}</p>}
-    </div>
+          {message}
+        </p>
+      )}
+    </form>
   );
 }

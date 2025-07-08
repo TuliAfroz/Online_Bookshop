@@ -154,7 +154,7 @@ export default function CustomerDashboard() {
             </Link>
             <button
               onClick={() => handleAddToCart(book.book_id)}
-              className="mt-2 w-full bg-teal-800 text-white py-2 rounded-xl hover:bg-teal-700 transition"
+              className="mt-2 w-full bg-slate-700 text-white py-2 rounded-xl hover:bg-slate-600 transition"
             >
               Add to Cart
             </button>
