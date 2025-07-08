@@ -114,7 +114,7 @@ BEGIN
 
   -- 2. Get order info
   SELECT Order_ID, Customer_ID,
-         COALESCE(use_points, FALSE),
+         COALESCE(use_points, FALSE)
          --COALESCE(use_giftcard, FALSE)
   INTO v_order_id, v_customer_id, v_use_points
   --v_use_giftcard
@@ -177,8 +177,14 @@ BEGIN
 
   IF v_cart_id IS NOT NULL THEN
     DELETE FROM CartItem WHERE Cart_ID = v_cart_id;
-    DELETE FROM Cart WHERE Cart_ID = v_cart_id;
+    --DELETE FROM Cart WHERE Cart_ID = v_cart_id;
   END IF;
+
+  UPDATE payment
+  SET 
+  points_earned=v_point
+  where payer_customer_id=NEW.payer_customer_id;
+  
 
   RETURN NULL;
 END;
