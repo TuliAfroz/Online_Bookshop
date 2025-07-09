@@ -14,12 +14,15 @@ import inventoryRoutes from './routes/inventoryRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js'; 
 import customerRoutes from './routes/customerRoutes.js';
+import giftcardRoutes from './routes/giftCardRoutes.js';
 
 
 import { readFile } from 'fs/promises';
 import pool from './config/db.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
+
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -46,6 +49,7 @@ app.use('/api/inventory', inventoryRoutes);
 app.use('/api/customers', customerRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/payment', paymentRoutes);
+app.use('/api/giftcards', giftcardRoutes);
 
 
 export async function initializeDB() {

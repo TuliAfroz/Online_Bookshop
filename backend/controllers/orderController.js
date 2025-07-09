@@ -14,22 +14,36 @@ export const placeOrder = async (req, res) => {
       `SELECT cart_id FROM Cart WHERE Customer_ID = $1 ORDER BY created_at DESC LIMIT 1`,
       [customer_id]
     );
+  try {
+    // 1. Get latest cart for the customer
+    const cartResult = await pool.query(
+      `SELECT cart_id FROM Cart WHERE Customer_ID = $1 ORDER BY created_at DESC LIMIT 1`,
+      [customer_id]
+    );
 
+    if (cartResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Cart not found' });
+    }
     if (cartResult.rows.length === 0) {
       return res.status(404).json({ error: 'Cart not found' });
     }
 
     const cartId = cartResult.rows[0].cart_id;
+    const cartId = cartResult.rows[0].cart_id;
 
     // 2. Clear old entries in temp giftcard table
     await pool.query(`DELETE FROM UsedGiftCardsTemp WHERE customer_id = $1`, [customer_id]);
+    // 2. Clear old entries in temp giftcard table
+    await pool.query(`DELETE FROM UsedGiftCardsTemp WHERE customer_id = $1`, [customer_id]);
 
+    // 3. Insert selected giftcards (if any)
     // 3. Insert selected giftcards (if any)
     if (Array.isArray(giftcard_ids) && giftcard_ids.length > 0) {
       const insertQuery = `
         INSERT INTO UsedGiftCardsTemp (customer_id, giftcard_id)
         VALUES ${giftcard_ids.map((_, i) => `($1, $${i + 2})`).join(', ')}
       `;
+      await pool.query(insertQuery, [customer_id, ...giftcard_ids]);
       await pool.query(insertQuery, [customer_id, ...giftcard_ids]);
     }
 
@@ -42,8 +56,18 @@ export const placeOrder = async (req, res) => {
     // 5. Insert order — trigger will do all logic
     const result = await pool.query(
       `INSERT INTO orders (order_id, customer_id, cart_id, use_points, date)
+    // 4. Generate unique order ID
+    let orderId = null;
+    do {
+      orderId = parseInt(uuidv4().replace(/\D/g, '').slice(0, 8));
+    } while (isNaN(orderId) || orderId < 10000000);
+
+    // 5. Insert order — trigger will do all logic
+    const result = await pool.query(
+      `INSERT INTO orders (order_id, customer_id, cart_id, use_points, date)
        VALUES ($1, $2, $3, $4, NOW())
        RETURNING *`,
+      [orderId, customer_id, cartId, use_points]
       [orderId, customer_id, cartId, use_points]
     );
 
