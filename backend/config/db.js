@@ -23,6 +23,15 @@ dotenv.config();
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false } // required for Supabase
+
 });
+// const pool = new Pool({
+//   connectionString: process.env.DATABASE_URL,
+//   ssl: { rejectUnauthorized: false }, // required for Supabase
+//   max: 20,                 // allow more simultaneous connections (adjust based on Supabase plan)
+//   idleTimeoutMillis: 30000, // idle connection timeout (30 seconds)
+//   connectionTimeoutMillis: 5000 // wait max 5s for a connection before throwing error
+// });
+
 
 export default pool;
