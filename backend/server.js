@@ -15,6 +15,7 @@ import orderRoutes from './routes/orderRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js'; 
 import customerRoutes from './routes/customerRoutes.js';
 
+
 import { readFile } from 'fs/promises';
 import pool from './config/db.js';
 import path from 'path';
@@ -42,10 +43,10 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/publishers', publisherRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/inventory', inventoryRoutes);
+app.use('/api/customers', customerRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/payment', paymentRoutes);
 
-app.use('/api/customers', customerRoutes);
 
 export async function initializeDB() {
   try {

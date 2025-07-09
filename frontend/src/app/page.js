@@ -44,7 +44,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Top Bar */}
-      <div className="flex justify-between items-center p-4 bg-teal-900 text-white relative">
+      <div className="flex justify-between items-center p-4 bg-slate-700 text-white relative">
         {/* Logo */}
         <div className="flex items-center space-x-2">
           <BookOpen size={32} className="text-white" />
@@ -55,7 +55,7 @@ export default function HomePage() {
         <div className="relative">
           <button
             onClick={() => setShowDropdown(!showDropdown)}
-            className="bg-white text-teal-900 font-semibold px-4 py-2 rounded hover:bg-gray-200"
+            className="bg-white text-slate-700 font-semibold px-4 py-2 rounded hover:bg-gray-200"
           >
             Login / Signup
           </button>

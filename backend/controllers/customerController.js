@@ -45,3 +45,22 @@ export const changePassword = async (req, res) => {
   }
 };
 
+export const getAllCustomers = async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT 
+        Customer_ID AS customer_id, 
+        Customer_Name AS name, 
+        Email AS email,             
+        Phone_No AS phone,
+        Address AS address
+      FROM Customer
+    `);
+    res.status(200).json({ success: true, data: result.rows });
+  } catch (error) {
+    console.error('Error fetching customers:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+

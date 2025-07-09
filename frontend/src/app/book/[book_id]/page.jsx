@@ -54,7 +54,7 @@ export default function BookDetailPage() {
             <p className="text-gray-700 text-lg mb-1">Author: {book.author_name}</p>
             <p className="text-gray-700 text-sm mb-1">Category: {book.categories?.join(', ')}</p>
             <p className="text-gray-600 text-sm mb-3">{book.description}</p>
-            <p className="text-blue-600 font-bold text-xl mb-2">৳{book.price}</p>
+            <p className="text-slate-700 font-bold text-xl mb-2">৳{book.price}</p>
             <p className="text-green-600 font-medium text-md">
               {book.quantity > 0
                 ? `In Stock (${book.quantity} copies available)`

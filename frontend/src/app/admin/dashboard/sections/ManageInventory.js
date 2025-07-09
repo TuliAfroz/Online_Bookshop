@@ -67,7 +67,7 @@ export default function ManageInventory() {
 
   return (
     <div>
-      <h2 className="text-xl font-semibold mb-4">📦 Manage Inventory</h2>
+      <h2 className="text-2xl font-bold mb-4 text-center">Manage Inventory</h2>
       <div className="overflow-x-auto">
         <table className="min-w-full bg-white rounded-xl shadow text-sm">
           <thead className="bg-gray-100 text-gray-600">
@@ -117,13 +117,13 @@ export default function ManageInventory() {
                     <>
                       <button
                         onClick={() => startEditing(book)}
-                        className="bg-blue-500 text-white px-2 py-1 rounded"
+                        className="bg-slate-700 text-white px-2 py-1 rounded hover:bg-slate-500 transition"
                       >
                         Edit
                       </button>
                       <button
                         onClick={() => handleDelete(book.book_id)}
-                        className="bg-red-500 text-white px-2 py-1 rounded"
+                        className="bg-red-700 text-white px-2 py-1 rounded hover:bg-red-500 transition"
                       >
                         Delete
                       </button>

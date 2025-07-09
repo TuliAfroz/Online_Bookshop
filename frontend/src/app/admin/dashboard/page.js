@@ -12,48 +12,46 @@ import BookList from './sections/BookList';
 import InventoryList from './sections/InventoryList';
 import ManageInventory from './sections/ManageInventory';
 import AuthorList from './sections/AuthorList';
-import Header from '@/components/Header'; // ✅ Added line
+import AdminHeader from '@/components/AdminHeader';
+import CustomerList from './sections/CustomerList';
+import CustomerDetails from './sections/CustomerDetails';
+
 
 const tabs = [
   { key: 'search', label: 'Search Books' },
-  { key: 'books', label: '📘 View Books' },
-  { key: 'add-book', label: '➕ Add Book' },
-  { key: 'inventory', label: '📦 Inventory' },
-  { key: 'manage-inventory', label: '🛠️ Manage Inventory' },
-  { key: 'add-author', label: '✍️ Add Author' },
-  { key: 'add-publisher', label: '🏢 Add Publisher' },
-  { key: 'publishers', label: '📇 View Publishers' },
-  { key: 'add-category', label: '🏷️ Add Category' },
-  { key: 'categories', label: '📂 View Categories' },
+  { key: 'view-customers', label: 'View Customers' },
+  { key: 'books', label: 'View Books' },
+  { key: 'add-book', label: 'Add Book' },
+  { key: 'inventory', label: 'Inventory' },
+  { key: 'manage-inventory', label: 'Manage Inventory' },
   { key: 'view-authors', label: 'View Authors' },
+  { key: 'add-author', label: 'Add Author' },
+  { key: 'publishers', label: 'View Publishers' },
+  { key: 'add-publisher', label: 'Add Publisher' },
+  { key: 'categories', label: 'View Categories' },
+  { key: 'add-category', label: 'Add Category' },
+  { key: 'logout', label: 'Logout' },
 ];
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('search');
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    window.location.href = '/';
+  };
+  if (activeTab === 'logout') {
+    handleLogout();
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <Header /> {/* ✅ Added line */}
+      <AdminHeader tabs={tabs} activeTab={activeTab} setActiveTab={setActiveTab} />
 
-      <div className="p-6">
-        <h1 className="text-3xl font-bold mb-6 text-center">📚 Admin Dashboard</h1>
-
-        <div className="flex flex-wrap justify-center gap-2 mb-6">
-          {tabs.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`px-4 py-2 rounded-xl text-sm font-medium ${
-                activeTab === tab.key
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white text-gray-700 border'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
+      <div className="p-6 max-w-5xl mx-auto">
         <div className="bg-white p-6 rounded-2xl shadow">
           {activeTab === 'search' && <BookSearch />}
           {activeTab === 'books' && <BookList />}
@@ -66,7 +64,17 @@ export default function AdminDashboard() {
           {activeTab === 'add-category' && <AddCategoryForm />}
           {activeTab === 'categories' && <CategoryList />}
           {activeTab === 'view-authors' && <AuthorList />}
+          {activeTab === 'view-customers' && (
+            selectedCustomer ? (
+              <CustomerDetails customer={selectedCustomer} onBack={() => setSelectedCustomer(null)} />
+            ) : (
+              <CustomerList onSelectCustomer={setSelectedCustomer} />
+            )
+          )}
+
         </div>
+
+        
       </div>
     </div>
   );

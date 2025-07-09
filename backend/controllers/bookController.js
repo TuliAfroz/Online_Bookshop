@@ -4,14 +4,18 @@ export const getAllBooks = async(req, res) => {
   try {
     const result = await pool.query(
       `SELECT 
-        b.book_id,
-        b.title,
-        b.price,
-        b.cover_image_url,
-        a.author_name
+      b.book_id,
+      b.title,
+      b.price,
+      b.cover_image_url,
+      a.author_name,
+      COALESCE(AVG(r.rating), 0) AS average_rating
       FROM Book b
       JOIN Author a ON b.author_id = a.author_id
-      ORDER BY b.book_id ASC`
+      LEFT JOIN Review r ON b.book_id = r.book_id
+      GROUP BY b.book_id, a.author_name
+      ORDER BY b.book_id ASC
+      `
     );
     console.log('Books fetched successfully:', result.rows);
     res.status(200).json({ success: true, data: result.rows});  

@@ -24,7 +24,6 @@ export default function AddAuthorForm() {
           Author_ID: parseInt(authorId),
           Author_Name: authorName,
           Total_Books: Number(totalBooks.trim()) || 0,
-
         }),
       });
 
@@ -45,12 +44,16 @@ export default function AddAuthorForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <h2 className="text-xl font-semibold mb-4">Add Author</h2>
+    <form
+      onSubmit={handleSubmit}
+      className="max-w-md mx-auto space-y-6 p-6 rounded-xl border border-gray-300"
+      style={{ marginTop: '40px' }} // optional vertical spacing
+    >
+      <h2 className="text-2xl font-semibold mb-4 text-center">Add Author</h2>
 
       {message && (
         <div
-          className={`p-2 rounded-md text-sm ${
+          className={`p-3 rounded-md text-sm ${
             message.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
           }`}
         >
@@ -90,7 +93,7 @@ export default function AddAuthorForm() {
 
       <button
         type="submit"
-        className="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700"
+        className="bg-slate-700 text-white w-full py-2 rounded-xl hover:bg-slate-600 transition"
       >
         Add Author
       </button>
