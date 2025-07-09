@@ -27,7 +27,8 @@ CREATE TABLE IF NOT EXISTS Customer (
 
 CREATE TABLE IF NOT EXISTS Admin (
   Admin_ID INT PRIMARY KEY,
-  Password VARCHAR NOT NULL
+  Password VARCHAR NOT NULL,
+  balance FLOAT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS Book (
@@ -76,7 +77,7 @@ CREATE TABLE IF NOT EXISTS Orders (
   Date           DATE,
   SubTotal_Price FLOAT,
   Discount       FLOAT,
-  Points_Used    INT,
+  use_points     BOOLEAN,
   Total_Price    FLOAT
 );
 
@@ -154,7 +155,7 @@ ALTER TABLE Orders
   ADD FOREIGN KEY (Customer_ID) REFERENCES Customer(Customer_ID);
 
 --ALTER TABLE Orders
---  ADD FOREIGN KEY (Gift_Card_ID) REFERENCES GiftCard(Card_ID);
+ -- ADD FOREIGN KEY (Gift_Card_ID) REFERENCES GiftCard(Card_ID);
 
 ALTER TABLE Orders
   ADD FOREIGN KEY (Cart_ID) REFERENCES Cart(Cart_ID);

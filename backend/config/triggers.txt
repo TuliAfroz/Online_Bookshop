@@ -1,0 +1,199 @@
+_____________________________________________________________________________________________________________
+
+CREATE TABLE UsedGiftCardsTemp (
+  customer_id INT,
+  giftcard_id VARCHAR
+);
+
+
+
+CREATE OR REPLACE FUNCTION process_order_on_insert()
+RETURNS TRIGGER AS $$
+DECLARE
+  v_cart_id INT;
+  v_subtotal FLOAT := 0;
+  v_points INT := 0;
+  v_level TEXT;
+  v_point_discount_rate FLOAT := 0;
+  v_gift_discount_rate FLOAT := 0;
+  v_total_discount FLOAT := 0;
+BEGIN
+  -- 1. Get latest cart ID
+  SELECT cart_id INTO v_cart_id
+  FROM Cart
+  WHERE customer_id = NEW.customer_id
+  ORDER BY created_at DESC
+  LIMIT 1;
+
+  IF v_cart_id IS NULL THEN
+    RAISE EXCEPTION 'No cart found for customer';
+  END IF;
+
+  -- 2. Calculate subtotal from CartItem
+  SELECT COALESCE(SUM(quantity * per_item_price), 0)
+  INTO v_subtotal
+  FROM CartItem
+  WHERE cart_id = v_cart_id;
+
+  -- 3. Calculate potential gift card discount, do not delete yet
+  --IF NEW.use_giftcard THEN
+    --SELECT COALESCE(SUM(amount), 0)
+    --INTO v_gift_discount_rate
+    --FROM GiftCard
+    --WHERE customer_id = NEW.customer_id;
+  --END IF;
+
+SELECT COALESCE(SUM(amount), 0)
+INTO v_gift_discount_rate
+FROM GiftCard g
+JOIN UsedGiftCardsTemp u ON g.card_id = u.giftcard_id
+WHERE g.customer_id = NEW.customer_id;
+
+
+  -- 4. Calculate point discount rate based on level, but do not deduct yet
+  IF NEW.use_points THEN
+    SELECT point_count, level INTO v_points, v_level
+    FROM Point
+    WHERE customer_id = NEW.customer_id;
+
+    IF v_points >= 300 THEN
+      IF v_level = 'Silver' THEN
+        v_point_discount_rate := 0.05;
+      ELSIF v_level = 'Gold' THEN
+        v_point_discount_rate := 0.10;
+      ELSIF v_level = 'Platinum' THEN
+        v_point_discount_rate := 0.15;
+      END IF;
+    END IF;
+  END IF;
+
+  -- 5. Calculate discount and payable amount
+v_total_discount := (v_subtotal * v_point_discount_rate) + (v_subtotal * v_gift_discount_rate / 100);
+  NEW.SubTotal_Price := v_subtotal;
+  NEW.Discount := v_total_discount;
+  NEW.Total_Price := v_subtotal - v_total_discount;
+
+
+  UPDATE orders
+SET
+  subtotal_price = subtotal_price,
+  discount = discount,
+  total_price = total_price
+WHERE order_id = NEW.order_id;
+
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- On INSERT of an order------------------------
+CREATE OR REPLACE TRIGGER trg_process_order
+BEFORE INSERT ON Orders
+FOR EACH ROW
+EXECUTE FUNCTION process_order_on_insert();
+
+____________________________________________________________________________________________________________________
+
+CREATE OR REPLACE FUNCTION handle_payment_post_insert()
+RETURNS TRIGGER AS $$
+DECLARE
+  v_point INT;
+  v_total_points INT;
+  v_level TEXT;
+  v_cart_id INT;
+  v_order_id INT;
+  v_customer_id INT;
+  v_use_points BOOLEAN := FALSE;
+  --v_use_giftcard BOOLEAN := FALSE;
+  v_current_points INT;
+BEGIN
+  -- 1. Update admin's balance (if the column exists)
+  UPDATE Admin
+  SET balance = COALESCE(balance, 0) + NEW.amount
+  WHERE Admin_ID = NEW.receiver_admin_id;
+
+  -- 2. Get order info
+  SELECT Order_ID, Customer_ID,
+         COALESCE(use_points, FALSE)
+         --COALESCE(use_giftcard, FALSE)
+  INTO v_order_id, v_customer_id, v_use_points
+  --v_use_giftcard
+  FROM Orders
+  WHERE Order_ID = NEW.order_id;
+
+  -- 3. Deduct 300 points if used and eligible
+  IF v_use_points THEN
+    SELECT Point_count INTO v_current_points
+    FROM Point
+    WHERE Customer_ID = v_customer_id;
+
+    IF v_current_points >= 300 THEN
+      UPDATE Point
+      SET Point_count = Point_count - 300
+      WHERE Customer_ID = v_customer_id;
+    END IF;
+  END IF;
+
+  -- 4. Delete gift cards used
+  DELETE FROM GiftCard
+  WHERE Card_ID IN (
+    SELECT giftcard_id
+    FROM UsedGiftCardsTemp
+    WHERE customer_id = NEW.payer_customer_id
+  );
+
+  -- 5. Add earned points (max 250)
+  v_point := FLOOR(RANDOM() * LEAST(NEW.amount / 5, 250)) + 1;
+
+  UPDATE Point
+  SET Point_count = Point_count + v_point
+  WHERE Customer_ID = v_customer_id;
+
+  IF NOT FOUND THEN
+    INSERT INTO Point(Customer_ID, Point_count, Level)
+    VALUES (v_customer_id, v_point, 'Silver');
+  END IF;
+
+  -- 6. Recalculate level
+  SELECT Point_count INTO v_total_points
+  FROM Point WHERE Customer_ID = v_customer_id;
+
+  IF v_total_points < 301 THEN
+    v_level := 'Silver';
+  ELSIF v_total_points < 601 THEN
+    v_level := 'Gold';
+  ELSE
+    v_level := 'Platinum';
+  END IF;
+
+  UPDATE Point SET Level = v_level WHERE Customer_ID = v_customer_id;
+
+  -- 7. Clear latest cart
+  SELECT Cart_ID INTO v_cart_id
+  FROM Cart
+  WHERE Customer_ID = v_customer_id
+  ORDER BY Created_At DESC
+  LIMIT 1;
+
+  IF v_cart_id IS NOT NULL THEN
+    DELETE FROM CartItem WHERE Cart_ID = v_cart_id;
+    --DELETE FROM Cart WHERE Cart_ID = v_cart_id;
+  END IF;
+
+  UPDATE payment
+  SET 
+  points_earned=v_point
+  where payer_customer_id=NEW.payer_customer_id;
+  
+
+  RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger setup
+DROP TRIGGER IF EXISTS trg_handle_payment ON Payment;
+
+CREATE TRIGGER trg_handle_payment
+AFTER INSERT ON Payment
+FOR EACH ROW
+EXECUTE FUNCTION handle_payment_post_insert();

@@ -11,7 +11,10 @@ import categoryRoutes from './routes/categoryRoutes.js';
 import publisherRoutes from './routes/publisherRoutes.js';
 import cartRoutes from './routes/cartRoutes.js';
 import inventoryRoutes from './routes/inventoryRoutes.js';
+import orderRoutes from './routes/orderRoutes.js';
+import paymentRoutes from './routes/paymentRoutes.js'; 
 import customerRoutes from './routes/customerRoutes.js';
+
 
 import { readFile } from 'fs/promises';
 import pool from './config/db.js';
@@ -41,6 +44,9 @@ app.use('/api/publishers', publisherRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/customers', customerRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/payment', paymentRoutes);
+
 
 export async function initializeDB() {
   try {

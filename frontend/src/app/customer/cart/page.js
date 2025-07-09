@@ -9,6 +9,10 @@ export default function CustomerCartPage() {
   const [cartItems, setCartItems] = useState([]);
   const [subtotal, setSubtotal] = useState(0);
   const customerId = getCustomerIdFromToken();
+  const [orderPlaced, setOrderPlaced] = useState(false);
+  const [transactionId, setTransactionId] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('');
+
 
   useEffect(() => {
     if (!customerId) return;
@@ -22,7 +26,65 @@ export default function CustomerCartPage() {
       })
       .catch(err => console.error('Failed to fetch cart:', err));
   }, []);
-
+  const handlePlaceOrder = async () => {
+    try {
+      const res = await fetch('http://localhost:3000/api/orders/place', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customer_id: customerId,
+          use_points: false,
+          giftcard_ids: [] // Add logic for gift cards if needed
+        }),
+      });
+  
+      const data = await res.json();
+      if (data.success) {
+        alert('✅ Order placed!');
+        setOrderPlaced(true);
+      } else {
+        alert('❌ Order failed: ' + data.error);
+      }
+    } catch (err) {
+      console.error('Order error:', err);
+      alert('❌ Server error during order.');
+    }
+  };
+  
+  const handlePayment = async () => {
+    if (!transactionId || !paymentMethod) {
+      alert('Please enter transaction ID and select a payment method.');
+      return;
+    }
+  
+    try {
+      const res = await fetch('http://localhost:3000/api/payment/make', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          transaction_id: transactionId,
+          method: paymentMethod,
+          payer_customer_id: customerId,
+        }),
+      });
+  
+      const data = await res.json();
+      if (data.success) {
+        alert('✅ Payment successful!');
+        setCartItems([]);
+        setSubtotal(0);
+        setTransactionId('');
+        setPaymentMethod('');
+        setOrderPlaced(false);
+      } else {
+        alert('❌ Payment failed: ' + data.error);
+      }
+    } catch (err) {
+      console.error('Payment error:', err);
+      alert('❌ Server error during payment.');
+    }
+  };
+  
   const handleUpdateQuantity = async (bookId, type) => {
     try {
       const endpoint =
@@ -130,6 +192,43 @@ export default function CustomerCartPage() {
             <div className="text-right text-xl font-semibold pt-4">
               Subtotal: <span className="text-green-700">৳{subtotal.toFixed(2)}</span>
             </div>
+
+                {/* Order Actions */}
+                <div className="text-right pt-6">
+                  <button
+                    onClick={handlePlaceOrder}
+                    className="bg-slate-700 text-white px-4 py-2 rounded hover:bg-slate-600"
+                  >
+                    Place Order
+                  </button>
+
+                  {orderPlaced && (
+                    <div className="mt-6 space-y-2">
+                      <input
+                        type="text"
+                        placeholder="Transaction ID"
+                        className="p-2 border rounded w-full"
+                        value={transactionId}
+                        onChange={(e) => setTransactionId(e.target.value)}
+                      />
+                      <select
+                        value={paymentMethod}
+                        onChange={(e) => setPaymentMethod(e.target.value)}
+                        className="p-2 border rounded w-full"
+                      >
+                        <option value="">Select Payment Method</option>
+                        <option value="Card">Card</option>
+                        <option value="Cash">Cash</option>
+                      </select>
+                      <button
+                        onClick={handlePayment}
+                        className="bg-slate-700 text-white px-4 py-2 rounded hover:bg-slate-600"
+                      >
+                        Make Payment
+                      </button>
+                    </div>
+                  )}
+                </div>
           </div>
         )}
       </div>
