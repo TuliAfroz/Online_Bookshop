@@ -54,6 +54,40 @@ export const placeOrder = async (req, res) => {
   }
 };
 
+export const cancelOrder = async (req, res) => {
+  const { order_id } = req.params;
+
+  try {
+    // 1. Check if the order exists and is not paid
+    const orderCheck = await pool.query(
+      `SELECT * FROM orders WHERE order_id = $1`,
+      [order_id]
+    );
+
+    if (orderCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    const paymentCheck = await pool.query(
+      `SELECT * FROM payment WHERE order_id = $1`,
+      [order_id]
+    );
+
+    if (paymentCheck.rows.length > 0) {
+      return res.status(400).json({ error: 'Order already paid and cannot be cancelled' });
+    }
+
+    // 2. Delete the order
+    await pool.query(`DELETE FROM orders WHERE order_id = $1`, [order_id]);
+
+    res.status(200).json({ success: true, message: 'Order cancelled successfully' });
+  } catch (error) {
+    console.error('❌ Error cancelling order:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+
 
 
 // import pool from '../config/db.js';
