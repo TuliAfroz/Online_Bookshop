@@ -197,3 +197,6 @@ CREATE TRIGGER trg_handle_payment
 AFTER INSERT ON Payment
 FOR EACH ROW
 EXECUTE FUNCTION handle_payment_post_insert();
+
+
+1254@&1254

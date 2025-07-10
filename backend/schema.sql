@@ -1,203 +1,163 @@
-CREATE TABLE IF NOT EXISTS Publisher (
-  Publisher_ID   INT PRIMARY KEY,
-  Publisher_Name VARCHAR NOT NULL,
-  Phone_No       VARCHAR
-);
+create table public.admin (
+  admin_id integer not null,
+  password character varying not null,
+  balance double precision null,
+  constraint admin_pkey primary key (admin_id)
+) TABLESPACE pg_default;
 
-CREATE TABLE IF NOT EXISTS Category (
-  Category_ID   INT PRIMARY KEY,
-  Category_Name VARCHAR NOT NULL,
-  Description   VARCHAR
-);
+create table public.author (
+  author_id integer not null,
+  author_name character varying not null,
+  total_books integer null,
+  constraint author_pkey primary key (author_id)
+) TABLESPACE pg_default;
 
-CREATE TABLE IF NOT EXISTS Author (
-  Author_ID   INT PRIMARY KEY,
-  Author_Name VARCHAR NOT NULL,
-  Total_Books INT
-);
+create table public.publisher (
+  publisher_id integer not null,
+  publisher_name character varying not null,
+  phone_no character varying null,
+  constraint publisher_pkey primary key (publisher_id)
+) TABLESPACE pg_default;
 
-CREATE TABLE IF NOT EXISTS Customer (
-  Customer_ID   INT PRIMARY KEY,
-  Password      VARCHAR NOT NULL,
-  Customer_Name VARCHAR NOT NULL,
-  Phone_No      VARCHAR NOT NULL,
-  Address       VARCHAR NOT NULL,
-  Email         VARCHAR
-);
+create table public.customer (
+  customer_id integer generated always as identity not null,
+  password character varying not null,
+  customer_name character varying not null,
+  phone_no character varying not null,
+  address character varying not null,
+  email character varying null,
+  constraint customer_pkey primary key (customer_id),
+  constraint unique_customer_email unique (email)
+) TABLESPACE pg_default;
 
-CREATE TABLE IF NOT EXISTS Admin (
-  Admin_ID INT PRIMARY KEY,
-  Password VARCHAR NOT NULL,
-  balance FLOAT NOT NULL
-);
+create table public.category (
+  category_id integer not null,
+  category_name character varying not null,
+  description character varying null,
+  constraint category_pkey primary key (category_id)
+) TABLESPACE pg_default;
 
-CREATE TABLE IF NOT EXISTS Book (
-  Book_ID         INT,
-  --Copy_No         INT,
-  Title           VARCHAR NOT NULL,
-  Description     VARCHAR,
-  ISBN            VARCHAR UNIQUE NOT NULL,
-  Cover_Image_URL VARCHAR,
-  Author_ID       INT,
-  Publisher_ID    INT,
-  Price           FLOAT NOT NULL,
-  PRIMARY KEY (Book_ID)
-);
+create table public.book (
+  book_id integer not null,
+  title character varying not null,
+  description character varying null,
+  cover_image_url character varying null,
+  author_id integer null,
+  publisher_id integer null,
+  price numeric not null,
+  constraint book_pkey primary key (book_id),
+  constraint book_author_id_fkey foreign KEY (author_id) references author (author_id),
+  constraint book_publisher_id_fkey foreign KEY (publisher_id) references publisher (publisher_id),
+  constraint book_author_id_fkey foreign KEY (author_id) references author (author_id)
+) TABLESPACE pg_default;
 
-CREATE TABLE IF NOT EXISTS BookCategory (
-  Book_ID   INT,
-  --Copy_No   INT,
-  Category_ID INT,
-  PRIMARY KEY (Book_ID,  Category_ID),
-  FOREIGN KEY (Book_ID) REFERENCES Book(Book_ID) ON DELETE CASCADE,
-  FOREIGN KEY (Category_ID) REFERENCES Category(Category_ID)
-);
+create table public.bookcategory (
+  book_id integer not null,
+  category_id integer not null,
+  constraint bookcategory_pkey primary key (book_id, category_id),
+  constraint bookcategory_category_id_fkey foreign KEY (category_id) references category (category_id)
+) TABLESPACE pg_default;
 
+create table public.cart (
+  cart_id integer not null,
+  customer_id integer null,
+  created_at date null,
+  constraint cart_pkey primary key (cart_id),
+  constraint cart_customer_id_fkey foreign KEY (customer_id) references customer (customer_id)
+) TABLESPACE pg_default;
 
-CREATE TABLE IF NOT EXISTS Cart (
-  Cart_ID     INT PRIMARY KEY,
-  Customer_ID INT,
-  Created_At  DATE
-);
+create table public.cartitem (
+  cartitem_id integer not null,
+  cart_id integer null,
+  book_id integer null,
+  quantity integer not null,
+  per_item_price numeric not null,
+  constraint cartitem_pkey primary key (cartitem_id),
+  constraint cartitem_cart_id_fkey foreign KEY (cart_id) references cart (cart_id) on delete CASCADE,
+  constraint cartitem_book_id_fkey foreign KEY (book_id) references book (book_id) on delete CASCADE
+) TABLESPACE pg_default;
 
-CREATE TABLE IF NOT EXISTS CartItem (
-  CartItem_ID    INT PRIMARY KEY,
-  Cart_ID        INT,
-  Book_ID        INT,
-  --Copy_No        INT,
-  Quantity       INT NOT NULL,
-  Per_Item_Price FLOAT NOT NULL
-);
+create table public.giftcard (
+  card_id character varying not null,
+  customer_id integer null,
+  amount numeric not null,
+  constraint giftcard_pkey primary key (card_id),
+  constraint giftcard_customer_id_fkey foreign KEY (customer_id) references customer (customer_id)
+) TABLESPACE pg_default;
 
-CREATE TABLE IF NOT EXISTS Orders (
-  Order_ID       INT PRIMARY KEY,
-  Customer_ID    INT,
- -- Gift_Card_ID   INT,
-  Cart_ID        INT,
-  Date           DATE,
-  SubTotal_Price FLOAT,
-  Discount       FLOAT,
-  use_points     BOOLEAN,
-  Total_Price    FLOAT
-);
+create table public.inventory (
+  book_id integer not null,
+  quantity integer not null,
+  constraint inventory_pkey primary key (book_id),
+  constraint inventory_book_id_fkey foreign KEY (book_id) references book (book_id) on delete CASCADE
+) TABLESPACE pg_default;
 
-CREATE TABLE IF NOT EXISTS Payment (
-  Transaction_ID       VARCHAR PRIMARY KEY,
-  Order_ID             INT,
-  Amount               FLOAT NOT NULL,
-  Date                 DATE,
-  Method               VARCHAR NOT NULL,
-  Payer_Customer_ID    INT,
-  Receiver_Admin_ID    INT,
-  Payer_Admin_ID       INT,
-  Receiver_Publisher_ID INT,
-  Points_Earned        INT
-);
+create table public.orders (
+  order_id integer not null,
+  customer_id integer null,
+  cart_id integer null,
+  date date null,
+  subtotal_price double precision null,
+  discount double precision null,
+  total_price double precision null,
+  use_points boolean null,
+  constraint orders_pkey primary key (order_id),
+  constraint orders_customer_id_fkey foreign KEY (customer_id) references customer (customer_id),
+  constraint orders_cart_id_fkey foreign KEY (cart_id) references cart (cart_id)
+) TABLESPACE pg_default;
 
-CREATE TABLE IF NOT EXISTS GiftCard (
-  Card_ID     INT PRIMARY KEY,
-  Customer_ID INT,
-  Amount      FLOAT NOT NULL
-);
+create table public.payment (
+  transaction_id character varying not null,
+  order_id integer null,
+  amount numeric not null,
+  date date null,
+  method character varying not null,
+  payer_customer_id integer null,
+  receiver_admin_id integer null,
+  payer_admin_id integer null,
+  receiver_publisher_id integer null,
+  points_earned integer null,
+  constraint payment_pkey primary key (transaction_id),
+  constraint payment_payer_admin_id_fkey foreign KEY (payer_admin_id) references admin (admin_id),
+  constraint payment_payer_customer_id_fkey foreign KEY (payer_customer_id) references customer (customer_id),
+  constraint payment_receiver_admin_id_fkey foreign KEY (receiver_admin_id) references admin (admin_id),
+  constraint payment_receiver_publisher_id_fkey foreign KEY (receiver_publisher_id) references publisher (publisher_id),
+  constraint payment_order_id_fkey foreign KEY (order_id) references orders (order_id)
+  ) TABLESPACE pg_default;
 
-CREATE TABLE IF NOT EXISTS Point (
-  Customer_ID INT PRIMARY KEY,
-  Point_count INT,
-  Level       VARCHAR
-);
+create table public.point (
+  customer_id integer not null,
+  point_count integer null,
+  level character varying null,
+  constraint point_pkey primary key (customer_id),
+  constraint point_customer_id_fkey foreign KEY (customer_id) references customer (customer_id),
+) TABLESPACE pg_default;
 
-CREATE TABLE IF NOT EXISTS Shipment (
-  Shipment_ID     INT PRIMARY KEY,
-  Order_ID        INT,
-  Publisher_ID    INT,
-  Admin_ID        INT,
-  Shipment_Status VARCHAR NOT NULL,
-  Shipment_Date   DATE
-);
+create table public.review (
+  book_id integer not null,
+  customer_id integer not null,
+  rating integer not null,
+  description character varying null,
+  constraint review_pkey primary key (book_id, customer_id),
+  constraint review_book_id_fkey foreign KEY (book_id) references book (book_id),
+  constraint review_customer_id_fkey foreign KEY (customer_id) references customer (customer_id)
+) TABLESPACE pg_default;
 
-CREATE TABLE IF NOT EXISTS Inventory (
-  Book_ID  INT,
-  --Copy_No  INT,
-  Admin_ID INT,
-  Quantity INT NOT NULL,
-  PRIMARY KEY (Book_ID)
-);
+create table public.shipment (
+  shipment_id integer not null,
+  order_id integer null,
+  publisher_id integer null,
+  admin_id integer null,
+  shipment_status character varying not null,
+  shipment_date date null,
+  constraint shipment_pkey primary key (shipment_id),
+  constraint shipment_order_id_fkey foreign KEY (order_id) references orders (order_id),
+  constraint shipment_publisher_id_fkey foreign KEY (publisher_id) references publisher (publisher_id),
+  constraint shipment_admin_id_fkey foreign KEY (admin_id) references admin (admin_id)
+) TABLESPACE pg_default;
 
-CREATE TABLE IF NOT EXISTS Review (
-  Book_ID      INT,
-  --Copy_No      INT,
-  Customer_ID  INT,
-  Rating       INT NOT NULL,
-  Description  VARCHAR,
-  PRIMARY KEY (Book_ID, Customer_ID)
-);
+create table public.usedgiftcardstemp (
+  customer_id integer null,
+  giftcard_id character varying null
+) TABLESPACE pg_default;
 
--- Foreign Keys
-ALTER TABLE Book
-  DROP COLUMN IF EXISTS Category_ID;
-
-ALTER TABLE Book
-  ADD FOREIGN KEY (Author_ID) REFERENCES Author(Author_ID);
-
-ALTER TABLE Book
-  ADD FOREIGN KEY (Publisher_ID) REFERENCES Publisher(Publisher_ID);
-
-ALTER TABLE Cart
-  ADD FOREIGN KEY (Customer_ID) REFERENCES Customer(Customer_ID);
-
-ALTER TABLE CartItem
-  ADD FOREIGN KEY (Cart_ID) REFERENCES Cart(Cart_ID);
-
-ALTER TABLE CartItem
-  ADD FOREIGN KEY (Book_ID) REFERENCES Book(Book_ID);
-
-ALTER TABLE Orders
-  ADD FOREIGN KEY (Customer_ID) REFERENCES Customer(Customer_ID);
-
---ALTER TABLE Orders
- -- ADD FOREIGN KEY (Gift_Card_ID) REFERENCES GiftCard(Card_ID);
-
-ALTER TABLE Orders
-  ADD FOREIGN KEY (Cart_ID) REFERENCES Cart(Cart_ID);
-
-ALTER TABLE Payment
-  ADD FOREIGN KEY (Order_ID) REFERENCES Orders(Order_ID);
-
-ALTER TABLE Payment
-  ADD FOREIGN KEY (Payer_Customer_ID) REFERENCES Customer(Customer_ID);
-
-ALTER TABLE Payment
-  ADD FOREIGN KEY (Receiver_Admin_ID) REFERENCES Admin(Admin_ID);
-
-ALTER TABLE Payment
-  ADD FOREIGN KEY (Payer_Admin_ID) REFERENCES Admin(Admin_ID);
-
-ALTER TABLE Payment
-  ADD FOREIGN KEY (Receiver_Publisher_ID) REFERENCES Publisher(Publisher_ID);
-
-ALTER TABLE GiftCard
-  ADD FOREIGN KEY (Customer_ID) REFERENCES Customer(Customer_ID);
-
-ALTER TABLE Point
-  ADD FOREIGN KEY (Customer_ID) REFERENCES Customer(Customer_ID);
-
-ALTER TABLE Shipment
-  ADD FOREIGN KEY (Order_ID) REFERENCES Orders(Order_ID);
-
-ALTER TABLE Shipment
-  ADD FOREIGN KEY (Publisher_ID) REFERENCES Publisher(Publisher_ID);
-
-ALTER TABLE Shipment
-  ADD FOREIGN KEY (Admin_ID) REFERENCES Admin(Admin_ID);
-
-ALTER TABLE Inventory
-  ADD FOREIGN KEY (Book_ID) REFERENCES Book(Book_ID);
-
---ALTER TABLE Inventory
-  --ADD FOREIGN KEY (Admin_ID) REFERENCES Admin(Admin_ID);
-
-ALTER TABLE Review
-  ADD FOREIGN KEY (Book_ID) REFERENCES Book(Book_ID);
-
-ALTER TABLE Review
-  ADD FOREIGN KEY (Customer_ID) REFERENCES Customer(Customer_ID);

@@ -1,9 +1,9 @@
 import express from 'express';
-import { getAllAuthors, createAuthor } from '../controllers/authorController.js';
+import * as authorController from '../controllers/authorController.js';
 
 const router = express.Router();
 
-router.get('/', getAllAuthors);
-router.post('/', createAuthor);
+router.get('/', authorController.getAllAuthors);
+router.post('/', authorController.createAuthor);
 
 export default router;

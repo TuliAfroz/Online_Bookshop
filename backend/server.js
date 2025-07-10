@@ -15,17 +15,9 @@ import orderRoutes from './routes/orderRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js'; 
 import customerRoutes from './routes/customerRoutes.js';
 import giftcardRoutes from './routes/giftCardRoutes.js';
+import reviewRoutes from './routes/reviewRoutes.js';
 
-
-import { readFile } from 'fs/promises';
 import pool from './config/db.js';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 dotenv.config();    
 
@@ -50,22 +42,17 @@ app.use('/api/customers', customerRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/giftcards', giftcardRoutes);
+app.use('/api/reviews', reviewRoutes);
 
+// Test the database connection
+pool.query('SELECT NOW()', (err, res) => {
+    if (err) {
+        console.error('❌ Database connection error:', err);
+    } else {
+        console.log('✅ Database connected successfully');
+    }
+});
 
-export async function initializeDB() {
-  try {
-    const schemaPath = path.join(__dirname, 'schema.sql');
-    const schema = await readFile(schemaPath, 'utf8');
-
-    await pool.query(schema); // Multiple CREATE TABLEs work here
-    console.log("✅ Schema executed successfully");
-  } catch (err) {
-    console.error("❌ Schema load error:", err.message);
-  }
-}
-
-initializeDB().then(() => {
-    app.listen(PORT, () => {
-        console.log(`Server is running on port ${PORT}`);
-    });
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
 });
