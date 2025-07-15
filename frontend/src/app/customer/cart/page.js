@@ -17,18 +17,24 @@ export default function CustomerCartPage() {
   const [usePoints, setUsePoints] = useState(false);
   const [giftcardDiscount, setGiftcardDiscount] = useState(0);
   const [pointsDiscount, setPointsDiscount] = useState(0);
+  const [finalSubtotal, setFinalSubtotal] = useState(0);
+  const [finalDiscount, setFinalDiscount] = useState(0);
+  const [finalTotalPayable, setFinalTotalPayable] = useState(0);
 
   const customerId = getCustomerIdFromToken();
 
   useEffect(() => {
     if (!customerId) return;
 
-    fetch(`http://localhost:3000/api/giftcards/${customerId}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) setGiftcards(data.giftcards);
-      })
-      .catch(err => console.error('Failed to fetch giftcards:', err));
+    const fetchGiftcards = async () => {
+        try {
+            const response = await axios.get(`http://localhost:5000/api/giftcards/customer/${customerId}`);
+            setGiftcards(response.data?.giftcards || []);
+        } catch (error) {
+            console.error('Error fetching giftcards:', error);
+            setGiftcards([]);
+        }
+    };
   }, [customerId]);
 
   useEffect(() => {
@@ -42,21 +48,10 @@ export default function CustomerCartPage() {
         }
       })
       .catch(err => console.error('Failed to fetch cart:', err));
-  }, []);
+  }, [customerId]);
 
-  useEffect(() => {
-    let gDiscount = 0;
-    if (selectedGiftcard) {
-      const selected = giftcards.find(g => g.giftcard_id === selectedGiftcard);
-      if (selected) gDiscount = Math.min(subtotal, selected.balance);
-    }
-    setGiftcardDiscount(gDiscount);
-
-    const pointsValue = usePoints ? Math.min(50, subtotal - gDiscount) : 0;
-    setPointsDiscount(pointsValue);
-  }, [selectedGiftcard, usePoints, giftcards, subtotal]);
-
-  const totalPayable = Math.max(subtotal - giftcardDiscount - pointsDiscount, 0);
+  // Remove local discount calculations as they will come from backend
+  
 
   const handlePlaceOrder = async () => {
     try {
@@ -75,6 +70,19 @@ export default function CustomerCartPage() {
         alert('✅ Order placed!');
         setOrderPlaced(true);
         setOrderId(data.order.order_id);
+
+        // Fetch updated order details from backend
+        const orderDetailsRes = await fetch(`http://localhost:3000/api/orders/details/${data.order.order_id}`);
+        const orderDetails = await orderDetailsRes.json();
+
+        if (orderDetails.success) {
+          setFinalSubtotal(orderDetails.order.subtotal_price);
+          setFinalDiscount(orderDetails.order.discount);
+          setFinalTotalPayable(orderDetails.order.total_price);
+        } else {
+          console.error('Failed to fetch order details:', orderDetails.error);
+        }
+
       } else {
         alert('❌ Order failed: ' + data.error);
       }
@@ -122,6 +130,7 @@ export default function CustomerCartPage() {
           transaction_id: transactionId,
           method: paymentMethod,
           payer_customer_id: customerId,
+          order_id: orderId,
         }),
       });
 
@@ -278,19 +287,15 @@ export default function CustomerCartPage() {
                   <h3 className="font-semibold mb-2">Order Summary</h3>
                   <div className="flex justify-between text-sm">
                     <span>Subtotal:</span>
-                    <span>৳{subtotal.toFixed(2)}</span>
+                    <span>৳{finalSubtotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-sm text-green-700">
-                    <span>Giftcard Discount:</span>
-                    <span>-৳{giftcardDiscount.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm text-green-700">
-                    <span>Points Discount:</span>
-                    <span>-৳{pointsDiscount.toFixed(2)}</span>
+                    <span>Discount:</span>
+                    <span>-৳{finalDiscount.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between font-semibold border-t pt-2 mt-2">
                     <span>Total Payable:</span>
-                    <span>৳{totalPayable.toFixed(2)}</span>
+                    <span>৳{finalTotalPayable.toFixed(2)}</span>
                   </div>
                 </div>
 

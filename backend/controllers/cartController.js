@@ -11,13 +11,13 @@ export const addToCart = async (req, res) => {
 
   try {
     // Get or create cart for customer
-    let cartRes = await pool.query(`SELECT Cart_ID FROM Cart WHERE Customer_ID = $1`, [customer_id]);
+    let cartRes = await pool.query(`SELECT Cart_ID FROM Cart WHERE Customer_ID = $1 and status = FALSE`, [customer_id]);
 
     let cartId;
     if (cartRes.rows.length === 0) {
       cartId = parseInt(uuidv4().replace(/\D/g, '').slice(0, 6)); // generate numeric ID
       await pool.query(
-        `INSERT INTO Cart (Cart_ID, Customer_ID, Created_At) VALUES ($1, $2, NOW())`,
+        `INSERT INTO Cart (Cart_ID, Customer_ID, Created_At,status) VALUES ($1, $2, NOW(), FALSE)`,
         [cartId, customer_id]
       );
     } else {
@@ -98,7 +98,7 @@ export const getCartWithItems = async (req, res) => {
   try {
     // 1. Get latest cart for this customer
     const cartResult = await pool.query(
-      `SELECT * FROM Cart WHERE Customer_ID = $1 ORDER BY Created_At DESC LIMIT 1`,
+      `SELECT * FROM Cart WHERE Customer_ID = $1 and status = FALSE ORDER BY Created_At DESC LIMIT 1`,
       [Customer_ID]
     );
 
@@ -163,7 +163,7 @@ export const removeFromCart = async (req, res) => {
   try {
     // 1. Get the latest cart
     const cartResult = await pool.query(
-      `SELECT Cart_ID FROM Cart WHERE Customer_ID = $1 ORDER BY Created_At DESC LIMIT 1`,
+      `SELECT Cart_ID FROM Cart WHERE Customer_ID = $1 and status = FALSE ORDER BY Created_At DESC LIMIT 1`,
       [customer_id]
     );
 

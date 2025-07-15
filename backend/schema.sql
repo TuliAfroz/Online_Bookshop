@@ -16,7 +16,33 @@ create table public.publisher (
   publisher_id integer not null,
   publisher_name character varying not null,
   phone_no character varying null,
+  balance double precision default 0.0, -- New: Tracks the balance of the publisher
   constraint publisher_pkey primary key (publisher_id)
+) TABLESPACE pg_default;
+
+-- Table to track orders placed by admin to publishers
+create table public.publisher_order (
+  publisher_order_id integer not null,
+  admin_id integer not null,
+  publisher_id integer not null,
+  order_date date not null,
+  total_amount numeric not null,
+  --status character varying not null, -- e.g., 'pending', 'completed', 'cancelled'
+  constraint publisher_order_pkey primary key (publisher_order_id),
+  constraint publisher_order_admin_id_fkey foreign key (admin_id) references admin (admin_id),
+  constraint publisher_order_publisher_id_fkey foreign key (publisher_id) references publisher (publisher_id)
+) TABLESPACE pg_default;
+
+-- Table to detail items within a publisher order
+create table public.publisher_order_item (
+  publisher_order_item_id integer not null,
+  publisher_order_id integer not null,
+  book_id integer not null,
+  quantity integer not null,
+  price_per_unit numeric not null,
+  constraint publisher_order_item_pkey primary key (publisher_order_item_id),
+  constraint publisher_order_item_publisher_order_id_fkey foreign key (publisher_order_id) references publisher_order (publisher_order_id) on delete cascade,
+  constraint publisher_order_item_book_id_fkey foreign key (book_id) references book (book_id)
 ) TABLESPACE pg_default;
 
 create table public.customer (
@@ -109,6 +135,7 @@ create table public.orders (
 create table public.payment (
   transaction_id character varying not null,
   order_id integer null,
+  publisher_order_id integer null, -- New: Link to publisher orders
   amount numeric not null,
   date date null,
   method character varying not null,
@@ -122,7 +149,8 @@ create table public.payment (
   constraint payment_payer_customer_id_fkey foreign KEY (payer_customer_id) references customer (customer_id),
   constraint payment_receiver_admin_id_fkey foreign KEY (receiver_admin_id) references admin (admin_id),
   constraint payment_receiver_publisher_id_fkey foreign KEY (receiver_publisher_id) references publisher (publisher_id),
-  constraint payment_order_id_fkey foreign KEY (order_id) references orders (order_id)
+  constraint payment_order_id_fkey foreign KEY (order_id) references orders (order_id),
+  constraint payment_publisher_order_id_fkey foreign KEY (publisher_order_id) references publisher_order (publisher_order_id)
   ) TABLESPACE pg_default;
 
 create table public.point (
@@ -133,28 +161,27 @@ create table public.point (
   constraint point_customer_id_fkey foreign KEY (customer_id) references customer (customer_id),
 ) TABLESPACE pg_default;
 
-create table public.review (
-  book_id integer not null,
-  customer_id integer not null,
-  rating integer not null,
-  description character varying null,
-  constraint review_pkey primary key (book_id, customer_id),
-  constraint review_book_id_fkey foreign KEY (book_id) references book (book_id),
-  constraint review_customer_id_fkey foreign KEY (customer_id) references customer (customer_id)
-) TABLESPACE pg_default;
+CREATE TABLE public.review (
+  book_id INTEGER NOT NULL,
+  customer_id INTEGER NOT NULL,
+  rating INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
+  description VARCHAR,
+  review_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT review_pkey PRIMARY KEY (book_id, customer_id),
+  CONSTRAINT review_book_id_fkey FOREIGN KEY (book_id) REFERENCES book (book_id),
+  CONSTRAINT review_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customer (customer_id)
+);
 
-create table public.shipment (
-  shipment_id integer not null,
-  order_id integer null,
-  publisher_id integer null,
-  admin_id integer null,
-  shipment_status character varying not null,
-  shipment_date date null,
-  constraint shipment_pkey primary key (shipment_id),
-  constraint shipment_order_id_fkey foreign KEY (order_id) references orders (order_id),
-  constraint shipment_publisher_id_fkey foreign KEY (publisher_id) references publisher (publisher_id),
-  constraint shipment_admin_id_fkey foreign KEY (admin_id) references admin (admin_id)
-) TABLESPACE pg_default;
+
+-- Table to track shipments for customer orders
+-- create table public.customer_shipment (
+--   shipment_id integer not null,
+--   order_id integer null,
+--   shipment_status character varying not null,
+--   shipment_date date null,
+--   constraint customer_shipment_pkey primary key (shipment_id),
+--   constraint customer_shipment_order_id_fkey foreign KEY (order_id) references orders (order_id)
+-- ) TABLESPACE pg_default;
 
 create table public.usedgiftcardstemp (
   customer_id integer null,

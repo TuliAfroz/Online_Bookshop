@@ -15,6 +15,7 @@ import AuthorList from './sections/AuthorList';
 import AdminHeader from '@/components/AdminHeader';
 import CustomerList from './sections/CustomerList';
 import CustomerDetails from './sections/CustomerDetails';
+//import AdminBuyBooks from './sections/AdminBuyBooks';
 
 
 const tabs = [
@@ -30,6 +31,7 @@ const tabs = [
   { key: 'add-publisher', label: 'Add Publisher' },
   { key: 'categories', label: 'View Categories' },
   { key: 'add-category', label: 'Add Category' },
+  { key: 'buy-books', label: 'Buy Books' },
   { key: 'logout', label: 'Logout' },
 ];
 
@@ -62,6 +64,7 @@ export default function AdminDashboard() {
           {activeTab === 'add-publisher' && <AddPublisherForm />}
           {activeTab === 'publishers' && <PublisherList />}
           {activeTab === 'add-category' && <AddCategoryForm />}
+          {activeTab === 'buy-books' && <AdminBuyBooks />}
           {activeTab === 'categories' && <CategoryList />}
           {activeTab === 'view-authors' && <AuthorList />}
           {activeTab === 'view-customers' && (

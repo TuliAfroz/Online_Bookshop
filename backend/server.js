@@ -16,6 +16,7 @@ import paymentRoutes from './routes/paymentRoutes.js';
 import customerRoutes from './routes/customerRoutes.js';
 import giftcardRoutes from './routes/giftCardRoutes.js';
 import reviewRoutes from './routes/reviewRoutes.js';
+import publisherOrderRoutes from './routes/publisherOrderRoutes.js';
 
 import pool from './config/db.js';
 
@@ -43,6 +44,7 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/giftcards', giftcardRoutes);
 app.use('/api/reviews', reviewRoutes);
+app.use('/api/publisher-orders', publisherOrderRoutes);
 
 // Test the database connection
 pool.query('SELECT NOW()', (err, res) => {

@@ -199,4 +199,31 @@ FOR EACH ROW
 EXECUTE FUNCTION handle_payment_post_insert();
 
 
-1254@&1254
+--------------------------------------------------trigger for checking bought bookd--------------------
+
+CREATE OR REPLACE FUNCTION enforce_review_purchase_check()
+RETURNS TRIGGER AS $$
+DECLARE
+    purchase_count INT;
+BEGIN
+    SELECT COUNT(*) INTO purchase_count
+    FROM orders o
+    JOIN cartitem ci ON ci.cart_id = o.cart_id
+    WHERE o.customer_id = NEW.customer_id
+      AND ci.book_id = NEW.book_id;
+
+    IF purchase_count = 0 THEN
+        RAISE EXCEPTION 'Customer % has not purchased book %', NEW.customer_id, NEW.book_id;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+CREATE OR REPLACE TRIGGER trg_review_purchase_check
+BEFORE INSERT OR UPDATE ON review
+FOR EACH ROW
+EXECUTE FUNCTION enforce_review_purchase_check();
+

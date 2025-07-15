@@ -5,13 +5,13 @@ export const getGiftcardsByCustomer = async (req, res) => {
 
   try {
     const result = await pool.query(
-      `SELECT card_id, amount FROM giftcards WHERE customer_id = $1`,
+      `SELECT card_id, amount FROM giftcard WHERE customer_id = $1`,
       [customer_id]
     );
 
-    res.status(200).json({ success: true, giftcards: result.rows });
+    res.status(200).json({ success: true, giftcard: result.rows });
   } catch (error) {
-    console.error('❌ Error fetching giftcards:', error);
-    res.status(500).json({ success: false, error: 'Failed to fetch giftcards' });
+    console.error('❌ Error fetching giftcard:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch giftcard' });
   }
 };

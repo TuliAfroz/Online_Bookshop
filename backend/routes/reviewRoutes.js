@@ -1,20 +1,18 @@
 import express from 'express';
+import {
+  addReview,
+  getBookReviews,
+  getCustomerReviews,
+  updateReview,
+  deleteReview
+} from '../controllers/reviewController.js';
+
 const router = express.Router();
-import * as reviewController from '../controllers/reviewController.js';
 
-// Add a new review
-router.post('/', reviewController.addReview);
-
-// Get all reviews for a specific book
-router.get('/book/:book_id', reviewController.getBookReviews);
-
-// Get all reviews by a specific customer
-router.get('/customer/:customer_id', reviewController.getCustomerReviews);
-
-// Update a review
-router.put('/:book_id/:customer_id', reviewController.updateReview);
-
-// Delete a review
-router.delete('/:book_id/:customer_id', reviewController.deleteReview);
+router.post('/add', addReview);
+router.get('/book/:book_id', getBookReviews);
+router.get('/customer/:customer_id', getCustomerReviews);
+router.put('/update/:book_id/:customer_id', updateReview);
+router.delete('/delete/:book_id/:customer_id', deleteReview);
 
 export default router;

@@ -1,22 +1,36 @@
 import pool from '../config/db.js';
 
 export const getAllBooks = async(req, res) => {
+  const { publisher_id } = req.query;
+
   try {
-    const result = await pool.query(
-      `SELECT 
-      b.book_id,
-      b.title,
-      b.price,
-      b.cover_image_url,
-      a.author_name,
-      COALESCE(AVG(r.rating), 0) AS average_rating
+    let query = `
+      SELECT 
+        b.book_id,
+        b.title,
+        b.price,
+        b.cover_image_url,
+        a.author_name,
+        COALESCE(AVG(r.rating), 0) AS average_rating
       FROM Book b
       JOIN Author a ON b.author_id = a.author_id
       LEFT JOIN Review r ON b.book_id = r.book_id
+    `;
+
+    const queryParams = [];
+
+    if (publisher_id) {
+      query += ` WHERE b.publisher_id = $1`;
+      queryParams.push(publisher_id);
+    }
+
+    query += `
       GROUP BY b.book_id, a.author_name
       ORDER BY b.book_id ASC
-      `
-    );
+    `;
+
+    const result = await pool.query(query, queryParams);
+
     console.log('Books fetched successfully:', result.rows);
     res.status(200).json({ success: true, data: result.rows});  
   } catch (error) {

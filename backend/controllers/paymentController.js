@@ -4,7 +4,7 @@ export const makePayment = async (req, res) => {
   const { order_id, method, transaction_id } = req.body;
 
   const payer_customer_id = req.body.payer_customer_id; // or get from session
-  const receiver_admin_id = 1; // Fixed admin ID
+  const receiver_admin_id = 101; // Fixed admin ID
 
   try {
     // Get amount from order
