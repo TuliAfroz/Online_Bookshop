@@ -50,9 +50,9 @@ export default function RootLayout({ children }) {
         <footer className="bg-gray-300 text-black text-sm px-6 py-8 space-y-4 mt-12">
           <div className="space-y-1">
             <p className="font-semibold text-lg">+88 01913-312424</p>
-            <p>43 Shilpacharya Zainul Abedin Sarak (Old 16 Shantinagar), Dhaka - 1217</p>
+            <p>ECE Building · Bangladesh University of Engineering and Technology · Dhaka 1205</p>
             <p>support@porua.com.bd</p>
-            <p>Trade License : TRAD/DSCC/2333/2019</p>
+            <p>Trade License : TRAD/DSCC/2333/2025</p>
           </div>
 
           <div className="flex items-center space-x-4 mt-4">

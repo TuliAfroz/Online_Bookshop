@@ -15,7 +15,7 @@ export default function CustomerDashboard() {
   const [showDropdown, setShowDropdown] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
-  const booksPerPage = 20;
+  const booksPerPage = 18;
   const totalPages = Math.ceil(filteredBooks.length / booksPerPage);
   const router = useRouter();
 

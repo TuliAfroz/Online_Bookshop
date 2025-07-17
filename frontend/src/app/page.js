@@ -12,7 +12,7 @@ export default function HomePage() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const booksPerPage = 20;
+  const booksPerPage = 18;
 
 
   useEffect(() => {
@@ -120,9 +120,8 @@ export default function HomePage() {
       {/* Horizontal Menu as Buttons */}
       <div className="flex justify-center flex-wrap gap-2 mb-6">
         {[
-          'Author',
-          'Publication',
-          'Offers',
+          'Authors',
+          'Publications',
           'Academic Books',
           'Books In Stock'
         ].map((label) => (
