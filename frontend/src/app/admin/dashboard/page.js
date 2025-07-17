@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import { Menu } from 'lucide-react';
+
 import AddBookForm from './sections/AddBookForm';
 import AddAuthorForm from './sections/AddAuthorForm';
 import AddPublisherForm from './sections/AddPublisherForm';
@@ -12,11 +14,9 @@ import BookList from './sections/BookList';
 import InventoryList from './sections/InventoryList';
 import ManageInventory from './sections/ManageInventory';
 import AuthorList from './sections/AuthorList';
-import AdminHeader from '@/components/AdminHeader';
 import CustomerList from './sections/CustomerList';
 import CustomerDetails from './sections/CustomerDetails';
-//import AdminBuyBooks from './sections/AdminBuyBooks';
-
+// import AdminBuyBooks from './sections/AdminBuyBooks'; // Uncomment if needed
 
 const tabs = [
   { key: 'search', label: 'Search Books' },
@@ -38,7 +38,7 @@ const tabs = [
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('search');
   const [selectedCustomer, setSelectedCustomer] = useState(null);
-
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -49,10 +49,38 @@ export default function AdminDashboard() {
     return null;
   }
 
+  const handleTabClick = (key) => {
+    setActiveTab(key);
+    setMenuOpen(false); // close dropdown
+  };
+
   return (
     <div className="min-h-screen bg-gray-100">
-      <AdminHeader tabs={tabs} activeTab={activeTab} setActiveTab={setActiveTab} />
+      {/* Menu Toggle Button (Top Right) */}
+      <div className="flex justify-end p-4 relative z-50">
+        <button onClick={() => setMenuOpen(!menuOpen)}>
+          <Menu size={28} />
+        </button>
 
+        {/* Dropdown Menu */}
+        {menuOpen && (
+          <div className="absolute right-4 top-full mt-2 w-56 bg-white text-gray-900 rounded-xl shadow-xl z-50 overflow-hidden">
+            {tabs.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => handleTabClick(tab.key)}
+                className={`w-full px-4 py-2 text-left hover:bg-slate-100 ${
+                  activeTab === tab.key ? 'bg-slate-200 font-semibold' : ''
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Main Content */}
       <div className="p-6 max-w-5xl mx-auto">
         <div className="bg-white p-6 rounded-2xl shadow">
           {activeTab === 'search' && <BookSearch />}
@@ -64,7 +92,7 @@ export default function AdminDashboard() {
           {activeTab === 'add-publisher' && <AddPublisherForm />}
           {activeTab === 'publishers' && <PublisherList />}
           {activeTab === 'add-category' && <AddCategoryForm />}
-          {activeTab === 'buy-books' && <AdminBuyBooks />}
+          {/* {activeTab === 'buy-books' && <AdminBuyBooks />} */}
           {activeTab === 'categories' && <CategoryList />}
           {activeTab === 'view-authors' && <AuthorList />}
           {activeTab === 'view-customers' && (
@@ -74,10 +102,7 @@ export default function AdminDashboard() {
               <CustomerList onSelectCustomer={setSelectedCustomer} />
             )
           )}
-
         </div>
-
-        
       </div>
     </div>
   );

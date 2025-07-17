@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { BookOpen } from 'lucide-react';
 import Link from 'next/link';
 
 export default function HomePage() {
@@ -11,10 +10,14 @@ export default function HomePage() {
   const [books, setBooks] = useState([]);
   const [filteredBooks, setFilteredBooks] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const booksPerPage = 20;
+
 
   useEffect(() => {
-    fetchBooks();
-  }, []);
+    fetchBooks(currentPage);
+  }, [currentPage]);
 
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
@@ -30,32 +33,27 @@ export default function HomePage() {
     return () => clearTimeout(delayDebounce);
   }, [searchQuery]);
 
-  const fetchBooks = async () => {
+  const fetchBooks = async (page = 1) => {
     try {
-      const res = await fetch('http://localhost:3000/api/books');
+      const res = await fetch(`http://localhost:3000/api/books?page=${page}&limit=${booksPerPage}`);
       const data = await res.json();
       setBooks(data.data || []);
       setFilteredBooks(data.data || []);
+      setTotalPages(Math.ceil(data.total / booksPerPage));
     } catch (err) {
       console.error('Failed to fetch books:', err);
     }
   };
+  
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Top Bar */}
-      <div className="flex justify-between items-center p-4 bg-slate-700 text-white relative">
-        {/* Logo */}
-        <div className="flex items-center space-x-2">
-          <BookOpen size={32} className="text-white" />
-          <span className="text-2xl font-[cursive] tracking-widest italic">PORUA</span>
-        </div>
-
-        {/* Nested Login / Signup */}
+    <div className="min-h-screen bg-gray-50 relative">
+      {/* Login/Signup Floating Dropdown */}
+      <div className="absolute top-4 right-4 z-20">
         <div className="relative">
           <button
             onClick={() => setShowDropdown(!showDropdown)}
-            className="bg-white text-slate-700 font-semibold px-4 py-2 rounded hover:bg-gray-200"
+            className="bg-white text-slate-700 font-semibold px-4 py-2 rounded hover:bg-gray-200 shadow"
           >
             Login / Signup
           </button>
@@ -67,7 +65,7 @@ export default function HomePage() {
                 <button className="w-full text-left px-2 py-1 hover:bg-gray-100 rounded">
                   Login ▸
                 </button>
-                <div className="absolute right-full top-0 w-40 bg-white shadow rounded hidden group-hover:block">
+                <div className="absolute right-full top-0 w-40 bg-white shadow rounded hidden group-hover:block z-20">
                   <button
                     className="block w-full text-left px-4 py-2 hover:bg-gray-100"
                     onClick={() => router.push('/admin/login')}
@@ -88,7 +86,7 @@ export default function HomePage() {
                 <button className="w-full text-left px-2 py-1 hover:bg-gray-100 rounded">
                   Signup ▸
                 </button>
-                <div className="absolute right-full top-0 w-40 bg-white shadow rounded hidden group-hover:block">
+                <div className="absolute right-full top-0 w-40 bg-white shadow rounded hidden group-hover:block z-20">
                   <button
                     className="block w-full text-left px-4 py-2 hover:bg-gray-100"
                     onClick={() => router.push('/admin/signup')}
@@ -109,7 +107,7 @@ export default function HomePage() {
       </div>
 
       {/* Search Bar */}
-      <div className="flex justify-center p-4">
+      <div className="flex justify-center p-4 mt-8">
         <input
           type="text"
           placeholder="Search by title, author, category or publisher"
@@ -137,27 +135,81 @@ export default function HomePage() {
         ))}
       </div>
 
-
       {/* Featured Books */}
-      <div className="px-6 pb-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-      {filteredBooks.map((book) => (
-        <Link href={`/book/${book.book_id}`} key={book.book_id}>
-          <div className="bg-white rounded-xl shadow hover:shadow-2xl transform hover:scale-105 transition duration-300 ease-in-out p-4 cursor-pointer">
-            {book.cover_image_url?.startsWith('http') && (
-              <img
-                src={book.cover_image_url}
-                alt={book.title}
-                className="w-full h-48 object-cover rounded mb-2"
-              />
-            )}
-            <h3 className="font-bold text-lg">{book.title}</h3>
-            <p className="text-sm text-gray-500 mb-1">{book.author_name}</p>
-            <p className="text-blue-600 font-bold">৳{book.price}</p>
+<div className="px-6 pb-10 grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 xl:grid-cols-7 gap-6 justify-items-center">
+  {filteredBooks.map((book) => (
+    <Link href={`/book/${book.book_id}`} key={book.book_id}>
+      <div className="bg-white rounded-xl shadow hover:shadow-2xl transform hover:scale-105 transition duration-300 ease-in-out p-4 cursor-pointer w-40">
+        {book.cover_image_url?.startsWith('http') && (
+          <div className="w-full h-60 flex items-center justify-center bg-gray-100 rounded mb-2 overflow-hidden">
+            <img
+              src={book.cover_image_url}
+              alt={book.title}
+              className="h-full object-contain"
+            />
           </div>
-        </Link>
-      ))}
-
+        )}
+        <h3 className="font-bold text-sm truncate">{book.title}</h3>
+        <p className="text-xs text-gray-500 mb-1 truncate">{book.author_name}</p>
+        <p className="text-blue-600 font-bold text-sm">৳{book.price}</p>
       </div>
+    </Link>
+  ))}
+</div>
+  
+{/* Pagination */}
+<div className="flex justify-center mt-10 space-x-2">
+  <button
+    disabled={currentPage === 1}
+    onClick={() => setCurrentPage(currentPage - 1)}
+    className="px-3 py-1 border rounded disabled:opacity-50"
+  >
+    &lt;
+  </button>
+
+  {/* Show 1st, current, ..., last */}
+  {currentPage > 2 && (
+    <>
+      <button onClick={() => setCurrentPage(1)} className="px-3 py-1 border rounded">1</button>
+      {currentPage > 3 && <span className="px-2">...</span>}
+    </>
+  )}
+
+  {/* Current Page */}
+  {currentPage > 1 && (
+    <button onClick={() => setCurrentPage(currentPage - 1)} className="px-3 py-1 border rounded">
+      {currentPage - 1}
+    </button>
+  )}
+
+  <span className="px-3 py-1 border rounded bg-slate-700 text-white">{currentPage}</span>
+
+  {currentPage < totalPages && (
+    <button onClick={() => setCurrentPage(currentPage + 1)} className="px-3 py-1 border rounded">
+      {currentPage + 1}
+    </button>
+  )}
+
+  {/* Show last */}
+  {currentPage < totalPages - 1 && (
+    <>
+      {currentPage < totalPages - 2 && <span className="px-2">...</span>}
+      <button onClick={() => setCurrentPage(totalPages)} className="px-3 py-1 border rounded">
+        {totalPages}
+      </button>
+    </>
+  )}
+
+  <button
+    disabled={currentPage === totalPages}
+    onClick={() => setCurrentPage(currentPage + 1)}
+    className="px-3 py-1 border rounded disabled:opacity-50"
+  >
+    &gt;
+  </button>
+</div>
+
+
     </div>
   );
 }

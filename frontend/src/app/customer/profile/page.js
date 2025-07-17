@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Header from '@/components/Header';
 import { getCustomerIdFromToken } from '../../utils/getCustomerId';
 
 export default function CustomerProfile() {
@@ -42,7 +41,7 @@ export default function CustomerProfile() {
 
   return (
     <div className="min-h-screen bg-blue-50">
-      <Header />
+      
       <div className="max-w-xl mx-auto bg-white shadow-md rounded-xl p-6 mt-6 space-y-4">
         <h2 className="text-xl font-bold mb-2">My Profile</h2>
         <p><strong>Name:</strong> {profile.customer_name}</p>

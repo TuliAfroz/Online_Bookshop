@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Header from '@/components/Header';
 import { getCustomerIdFromToken } from '../../utils/getCustomerId';
 
 export default function CustomerReviews() {
@@ -101,7 +100,7 @@ export default function CustomerReviews() {
 
     return (
         <div className="min-h-screen bg-blue-50">
-            <Header />
+            
             <div className="max-w-2xl mx-auto bg-white shadow-md rounded-xl p-6 mt-6 space-y-6">
                 <h2 className="text-2xl font-bold mb-4">My Reviews</h2>
 

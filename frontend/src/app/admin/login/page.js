@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Header from '@/components/Header'; 
 
 export default function AdminLoginPage() {
   const [adminId, setAdminId] = useState('');
@@ -41,7 +40,7 @@ export default function AdminLoginPage() {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <Header /> 
+      
 
       <div className="flex items-center justify-center px-4 py-10">
         <div className="max-w-md w-full bg-white p-6 rounded-2xl shadow-md">

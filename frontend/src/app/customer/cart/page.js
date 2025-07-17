@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Header from '@/components/Header';
 import { getCustomerIdFromToken } from '../../utils/getCustomerId';
 import { Trash2 } from 'lucide-react';
 
@@ -180,7 +179,7 @@ export default function CustomerCartPage() {
 
   return (
     <div className="min-h-screen bg-white-50">
-      <Header />
+      
       <div className="max-w-5xl mx-auto p-6">
         <h2 className="text-2xl font-bold mb-4">Your Cart</h2>
 

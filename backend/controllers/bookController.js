@@ -1,9 +1,24 @@
 import pool from '../config/db.js';
 
 export const getAllBooks = async(req, res) => {
-  const { publisher_id } = req.query;
+  const { publisher_id , page = 1, limit = 20 } = req.query;
 
   try {
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+
+    // Count total number of books (for pagination info)
+    let countQuery = `SELECT COUNT(*) AS total FROM Book`;
+    const countParams = [];
+
+    if (publisher_id) {
+      countQuery += ` WHERE publisher_id = $1`;
+      countParams.push(publisher_id);
+    }
+
+    const countResult = await pool.query(countQuery, countParams);
+    const total = parseInt(countResult.rows[0].total);
+
+
     let query = `
       SELECT 
         b.book_id,
@@ -27,12 +42,20 @@ export const getAllBooks = async(req, res) => {
     query += `
       GROUP BY b.book_id, a.author_name
       ORDER BY b.book_id ASC
+      LIMIT $${queryParams.length + 1} OFFSET $${queryParams.length + 2}
     `;
+    queryParams.push(parseInt(limit), offset);
 
     const result = await pool.query(query, queryParams);
 
     console.log('Books fetched successfully:', result.rows);
-    res.status(200).json({ success: true, data: result.rows});  
+    res.status(200).json({
+      success: true,
+      data: result.rows,
+      total,               // total books
+      page: parseInt(page),
+      limit: parseInt(limit),
+    });  
   } catch (error) {
     console.error('Error fetching books:', error);
     res.status(500).json({ error: 'Internal Server Error' });

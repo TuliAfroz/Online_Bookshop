@@ -1,8 +1,6 @@
-// frontend/src/app/customer/dashboard/page.js
 'use client';
 
 import { useEffect, useState } from 'react';
-import Header from '@/components/Header';
 import { getCustomerIdFromToken } from '../../utils/getCustomerId';
 import Link from 'next/link';
 import { User, ShoppingCart } from 'lucide-react';
@@ -16,6 +14,9 @@ export default function CustomerDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const booksPerPage = 20;
+  const totalPages = Math.ceil(filteredBooks.length / booksPerPage);
   const router = useRouter();
 
   useEffect(() => {
@@ -29,10 +30,11 @@ export default function CustomerDashboard() {
       })
       .catch(console.error);
   }, []);
+
   useEffect(() => {
     const customerId = getCustomerIdFromToken();
     if (!customerId) return;
-  
+
     fetch(`http://localhost:3000/api/cart/${customerId}`)
       .then(res => res.json())
       .then(data => {
@@ -40,17 +42,24 @@ export default function CustomerDashboard() {
       })
       .catch(console.error);
   }, []);
-  
+
   useEffect(() => {
     fetchBooks();
   }, []);
 
   useEffect(() => {
     const delay = setTimeout(() => {
-      if (!searchQuery.trim()) return setFilteredBooks(books);
+      if (!searchQuery.trim()) {
+        setFilteredBooks(books);
+        return;
+      }
+
       fetch(`http://localhost:3000/api/books/search?query=${encodeURIComponent(searchQuery)}`)
         .then(res => res.json())
-        .then(data => setFilteredBooks(data.data || []))
+        .then(data => {
+          setFilteredBooks(data.data || []);
+          setCurrentPage(1);
+        })
         .catch(console.error);
     }, 300);
 
@@ -72,7 +81,7 @@ export default function CustomerDashboard() {
   const handleAddToCart = async (bookId) => {
     const customerId = getCustomerIdFromToken();
     if (!customerId) return alert('You must be logged in');
-  
+
     try {
       const res = await fetch('http://localhost:3000/api/cart/add', {
         method: 'POST',
@@ -82,27 +91,31 @@ export default function CustomerDashboard() {
           cart_items: [{ book_id: bookId, quantity: 1 }]
         })
       });
-  
+
       const data = await res.json();
       if (!res.ok) return alert(data.error || 'Failed to add to cart');
-  
-      // Update cart again
+
       const updatedCart = await fetch(`http://localhost:3000/api/cart/${customerId}`);
       const updatedData = await updatedCart.json();
       if (updatedData?.items) setCart(updatedData.items);
-  
+
     } catch (err) {
       console.error('Add to cart error:', err);
       alert('Failed to add to cart.');
     }
   };
+
   const getQuantityInCart = (bookId) =>
     cart.find(item => item.book_id === bookId)?.quantity || 0;
 
+  const paginatedBooks = filteredBooks.slice(
+    (currentPage - 1) * booksPerPage,
+    currentPage * booksPerPage
+  );
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
-
+      {/* Header */}
       <div className="flex justify-end items-center gap-4 px-6 pt-4">
         <button onClick={() => router.push('/customer/cart')} className="text-gray-800 hover:text-blue-600 transition">
           <ShoppingCart size={24} />
@@ -124,6 +137,7 @@ export default function CustomerDashboard() {
         </div>
       </div>
 
+      {/* Search */}
       <div className="flex justify-center p-4">
         <input
           type="text"
@@ -134,32 +148,91 @@ export default function CustomerDashboard() {
         />
       </div>
 
-      <div className="px-6 pb-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {filteredBooks.map((book) => (
-          <div key={book.book_id} className="bg-white rounded-xl shadow p-4">
+      {/* Book Grid */}
+      <div className="px-6 pb-10 grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 xl:grid-cols-7 gap-6 justify-items-center">
+        {paginatedBooks.map((book) => (
+          <div key={book.book_id} className="relative group w-40">
+            {/* Hover overlay */}
+            <div className="absolute inset-0 bg-black bg-opacity-20 opacity-0 group-hover:opacity-100 transition duration-300 z-10 rounded-xl"></div>
+
+            {/* Book card */}
             <Link href={`/book/${book.book_id}`}>
-              <div className="cursor-pointer hover:shadow-2xl transform hover:scale-105 transition duration-300 ease-in-out">
+              <div className="relative z-0 bg-white rounded-xl shadow-sm group-hover:shadow-xl group-hover:scale-105 transform transition duration-300 p-4 w-40 cursor-pointer">
                 {book.cover_image_url?.startsWith('http') && (
-                  <img src={book.cover_image_url} alt={book.title} className="w-full h-48 object-cover rounded mb-2" />
+                  <div className="w-full h-60 flex items-center justify-center bg-gray-100 rounded mb-2 overflow-hidden">
+                    <img
+                      src={book.cover_image_url}
+                      alt={book.title}
+                      className="h-full object-contain"
+                    />
+                  </div>
                 )}
-                <h3 className="font-bold text-lg">{book.title}</h3>
-                <p className="text-sm text-gray-500 mb-1">{book.author_name}</p>
-                <p className="text-blue-600 font-bold">৳{book.price}</p>
-
-                <div className="mt-2 text-sm text-gray-800">
-                  <span>In cart : {getQuantityInCart(book.book_id)}</span>
-                </div>
-
+                <h3 className="font-bold text-sm truncate">{book.title}</h3>
+                <p className="text-xs text-gray-500 mb-1 truncate">{book.author_name}</p>
+                <p className="text-blue-600 font-bold text-sm">৳{book.price}</p>
+                <div className="text-xs mt-1 text-gray-700">In cart: {getQuantityInCart(book.book_id)}</div>
               </div>
             </Link>
+
+            {/* Add to Cart Button */}
             <button
               onClick={() => handleAddToCart(book.book_id)}
-              className="mt-2 w-full bg-slate-700 text-white py-2 rounded-xl hover:bg-slate-600 transition"
+              className="absolute hidden group-hover:flex items-center justify-center bg-slate-700 text-white text-sm px-3 py-2 transition hover:bg-slate-600 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20 whitespace-nowrap"
             >
               Add to Cart
             </button>
+
           </div>
         ))}
+      </div>
+
+      {/* Pagination */}
+      <div className="flex justify-center mt-10 mb-16 space-x-2">
+        <button
+          disabled={currentPage === 1}
+          onClick={() => setCurrentPage(currentPage - 1)}
+          className="px-3 py-1 border rounded disabled:opacity-50"
+        >
+          &lt;
+        </button>
+
+        {currentPage > 2 && (
+          <>
+            <button onClick={() => setCurrentPage(1)} className="px-3 py-1 border rounded">1</button>
+            {currentPage > 3 && <span className="px-2">...</span>}
+          </>
+        )}
+
+        {currentPage > 1 && (
+          <button onClick={() => setCurrentPage(currentPage - 1)} className="px-3 py-1 border rounded">
+            {currentPage - 1}
+          </button>
+        )}
+
+        <span className="px-3 py-1 border rounded bg-slate-700 text-white">{currentPage}</span>
+
+        {currentPage < totalPages && (
+          <button onClick={() => setCurrentPage(currentPage + 1)} className="px-3 py-1 border rounded">
+            {currentPage + 1}
+          </button>
+        )}
+
+        {currentPage < totalPages - 1 && (
+          <>
+            {currentPage < totalPages - 2 && <span className="px-2">...</span>}
+            <button onClick={() => setCurrentPage(totalPages)} className="px-3 py-1 border rounded">
+              {totalPages}
+            </button>
+          </>
+        )}
+
+        <button
+          disabled={currentPage === totalPages}
+          onClick={() => setCurrentPage(currentPage + 1)}
+          className="px-3 py-1 border rounded disabled:opacity-50"
+        >
+          &gt;
+        </button>
       </div>
     </div>
   );

@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import Header from '@/components/Header'; // adjust path if needed
 
 export default function BookDetailPage() {
   const { book_id } = useParams();
@@ -33,7 +32,7 @@ export default function BookDetailPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
+      
 
       <div className="p-10 flex justify-center">
         <div className="max-w-4xl w-full bg-white p-6 rounded-xl shadow-lg grid grid-cols-1 md:grid-cols-2 gap-6">
