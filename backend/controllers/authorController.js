@@ -2,9 +2,22 @@ import pool from '../config/db.js';
 
 // Get all authors
 export const getAllAuthors = async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 18;
+  const offset = (page - 1) * limit;
+
   try {
-    const result = await pool.query('SELECT * FROM Author ORDER BY author_id ASC');
-    res.status(200).json({ success: true, data: result.rows });
+    const result = await pool.query(`
+      SELECT * FROM Author ORDER BY author_id ASC LIMIT $1 OFFSET $2
+    `, [limit, offset]);
+
+    const totalCount = await pool.query(`SELECT COUNT(*) FROM Author`);
+
+    res.status(200).json({
+      success: true,
+      data: result.rows,
+      total: parseInt(totalCount.rows[0].count),
+    });
   } catch (error) {
     console.error('Error fetching authors:', error);
     res.status(500).json({ error: 'Internal Server Error' });

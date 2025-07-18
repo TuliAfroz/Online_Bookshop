@@ -330,3 +330,41 @@ export const searchBooks = async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+
+export const getBooksByAuthor = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(
+      `SELECT b.*, a.author_name 
+       FROM book b 
+       JOIN author a ON b.author_id = a.author_id 
+       WHERE b.author_id = $1
+       ORDER BY b.book_id ASC`,
+      [id]
+    );
+    res.status(200).json({ success: true, data: result.rows });
+  } catch (error) {
+    console.error('Error fetching books by author:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+// bookController.js
+
+export const getBooksByPublisher = async (req, res) => {
+  try {
+    const { publisherId } = req.params;
+
+    const result = await pool.query(
+      `SELECT b.book_id, b.title, b.cover_image_url, b.price, a.author_name
+       FROM book b
+       JOIN author a ON b.author_id = a.author_id
+       WHERE b.publisher_id = $1`,
+      [publisherId]
+    );
+
+    res.status(200).json({ data: result.rows });
+  } catch (error) {
+    console.error('Error fetching books by publisher:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};

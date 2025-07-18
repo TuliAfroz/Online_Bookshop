@@ -1,15 +1,28 @@
 import pool from '../config/db.js';
 
-// Get all publishers
+
 export const getAllPublishers = async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM Publisher ORDER BY publisher_id ASC');
-    res.status(200).json({ success: true, data: result.rows });
+    const { page = 1, limit = 18 } = req.query;
+    const offset = (page - 1) * limit;
+
+    // Get total count
+    const totalResult = await pool.query('SELECT COUNT(*) FROM publisher');
+    const total = parseInt(totalResult.rows[0].count, 10);
+
+    // Get paginated publishers
+    const result = await pool.query(
+      'SELECT publisher_id, publisher_name, publisher_img_url FROM publisher ORDER BY publisher_id ASC LIMIT $1 OFFSET $2',
+      [limit, offset]
+    );
+
+    res.status(200).json({ data: result.rows, total });
   } catch (error) {
     console.error('Error fetching publishers:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+
 
 // Create new publisher
 export const createPublisher = async (req, res) => {
