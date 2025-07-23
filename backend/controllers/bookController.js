@@ -368,3 +368,40 @@ export const getBooksByPublisher = async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+export const getBooksInStock = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 18;
+    const offset = (page - 1) * limit;
+
+    // First get total count of in-stock books
+    const countResult = await pool.query(`
+      SELECT COUNT(*) AS total
+      FROM book b
+      JOIN inventory i ON b.book_id = i.book_id
+      WHERE i.quantity > 0
+    `);
+    const total = parseInt(countResult.rows[0].total);
+
+    // Then get paginated books
+    const result = await pool.query(`
+      SELECT b.*, i.quantity AS stock_quantity
+      FROM book b
+      JOIN inventory i ON b.book_id = i.book_id
+      WHERE i.quantity > 0
+      ORDER BY b.book_id ASC
+      LIMIT $1 OFFSET $2
+    `, [limit, offset]);
+
+    res.status(200).json({ 
+      data: result.rows,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+    });
+  } catch (error) {
+    console.error('Error fetching books in stock:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+

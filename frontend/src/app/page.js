@@ -19,12 +19,16 @@ export default function HomePage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [activeView, setActiveView] = useState('books');
+  const [inStockMode, setInStockMode] = useState(false);
+
   const booksPerPage = 18;
 
   // 🌐 Fetch data on page load or when activeView/currentPage changes
   useEffect(() => {
     if (activeView === 'books') {
-      if (activeAuthor !== null) {
+      if (inStockMode) {
+        fetchBooksInStock(currentPage); // ✅ call with currentPage!
+      }else if (activeAuthor !== null) {
         fetchBooksByAuthor(activeAuthor);
       } else if (activePublisher !== null) {
         fetchBooksByPublisher(activePublisher);
@@ -36,7 +40,7 @@ export default function HomePage() {
     } else if (activeView === 'publications') {
       fetchPublishers(currentPage);
     }
-  }, [activeView, currentPage, activeAuthor, activePublisher]);
+  }, [activeView, currentPage, activeAuthor, activePublisher,inStockMode]);
 
   // 🔍 Search functionality (only searches books)
   useEffect(() => {
@@ -78,6 +82,7 @@ export default function HomePage() {
       setActiveAuthor(authorId);
       setActivePublisher(null);
       setCurrentPage(1);
+      setActiveView('books');
     } catch (err) {
       console.error('Failed to fetch books by author:', err);
     }
@@ -93,11 +98,29 @@ export default function HomePage() {
       setActivePublisher(publisherId);
       setActiveAuthor(null);
       setCurrentPage(1);
+      setActiveView('books');
     } catch (err) {
       console.error('Failed to fetch books by publisher:', err);
     }
   };
-
+  const fetchBooksInStock = async (page = 1) => {
+    try {
+      const res = await fetch(`http://localhost:3000/api/books/in-stock?page=${page}&limit=${booksPerPage}`);
+      const data = await res.json();
+      setBooks(data.data || []);
+      setFilteredBooks(data.data || []);
+      setTotalPages(data.totalPages || 1);
+      setActiveAuthor(null);
+      setActivePublisher(null);
+      setCurrentPage(page);
+      setActiveView('books');
+      setInStockMode(true);
+    } catch (err) {
+      console.error('Failed to fetch books in stock:', err);
+    }
+  };
+  
+  
   // 👤 Fetch authors
   const fetchAuthors = async (page = 1) => {
     try {
@@ -125,10 +148,63 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-gray-50 relative">
       {/* Login/Signup Dropdown */}
-      <div className="absolute top-4 right-4 z-20">
-        {/* ...same as before, unchanged... */}
-        {/* Skipped here for brevity */}
+<div className="absolute top-4 right-4 z-20">
+  <div className="relative">
+    <button
+      onClick={() => setShowDropdown(!showDropdown)}
+      className="bg-white text-slate-700 font-semibold px-4 py-2 rounded hover:bg-gray-200"
+    >
+      Login / Signup
+    </button>
+
+    {showDropdown && (
+      <div className="absolute right-0 mt-2 w-48 bg-white rounded shadow z-10 text-black p-2 space-y-2">
+        {/* Login submenu */}
+        <div className="group relative">
+          <button className="w-full text-left px-2 py-1 hover:bg-gray-100 rounded">
+            Login ▸
+          </button>
+          <div className="absolute right-full top-0 w-40 bg-white shadow rounded hidden group-hover:block">
+            <button
+              className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+              onClick={() => router.push('/admin/login')}
+            >
+              Admin
+            </button>
+            <button
+              className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+              onClick={() => router.push('/customer/login')}
+            >
+              Customer
+            </button>
+          </div>
+        </div>
+
+        {/* Signup submenu */}
+        <div className="group relative">
+          <button className="w-full text-left px-2 py-1 hover:bg-gray-100 rounded">
+            Signup ▸
+          </button>
+          <div className="absolute right-full top-0 w-40 bg-white shadow rounded hidden group-hover:block">
+            <button
+              className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+              onClick={() => router.push('/admin/signup')}
+            >
+              Admin
+            </button>
+            <button
+              className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+              onClick={() => router.push('/customer/signup')}
+            >
+              Customer
+            </button>
+          </div>
+        </div>
       </div>
+    )}
+  </div>
+</div>
+
 
       {/* Search Bar */}
       <div className="flex justify-center p-4 mt-8">
@@ -143,32 +219,31 @@ export default function HomePage() {
 
       {/* Button Menu */}
       <div className="flex justify-center flex-wrap gap-2 mb-6">
-        {[
-          { label: 'Home', view: 'books' },
-          { label: 'Authors', view: 'authors' },
-          { label: 'Publications', view: 'publications' },
-          { label: 'Categories', view: 'categories' },
-          { label: 'Books In Stock', view: 'books' },
-        ].map(({ label, view }) => (
-          <button
-            key={label}
-            onClick={() => {
-              setActiveView(view);
-              setCurrentPage(1);
-              setActiveAuthor(null);
-              setActivePublisher(null);
-              if (view === 'books') fetchBooks(1);
-              else if (view === 'authors') fetchAuthors(1);
-              else if (view === 'publications') fetchPublishers(1);
-              // Add others if needed
-            }}
-            className={`bg-white text-gray-800 border border-gray-300 px-4 py-2 rounded-xl shadow hover:bg-gray-100 transition ${
-              activeView === view ? 'bg-gray-200' : ''
-            }`}
-          >
-            {label}
-          </button>
-        ))}
+      {[
+  { label: 'Home', view: 'books', onClick: () => fetchBooks(1) },
+  { label: 'Authors', view: 'authors', onClick: () => fetchAuthors(1) },
+  { label: 'Publications', view: 'publications', onClick: () => fetchPublishers(1) },
+  { label: 'Categories', view: 'categories' },
+  { label: 'Books In Stock', view: 'books', onClick: () => fetchBooksInStock(1) },
+].map(({ label, view, onClick }) => (
+  <button
+    key={label}
+    onClick={() => {
+      setActiveView(view);
+      setCurrentPage(1);
+      setActiveAuthor(null);
+      setActivePublisher(null);
+      setInStockMode(false);
+      onClick?.();
+    }}
+    className={`bg-white text-gray-800 border border-gray-300 px-4 py-2 rounded-xl shadow hover:bg-gray-100 transition ${
+      activeView === view ? 'bg-gray-200' : ''
+    }`}
+  >
+    {label}
+  </button>
+))}
+
       </div>
 
       {/* Content Grid */}
