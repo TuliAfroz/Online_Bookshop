@@ -67,7 +67,7 @@ export default function CustomerDashboard() {
   }, [searchQuery]);
 
   const fetchBooks = async () => {
-    const res = await fetch('http://localhost:3000/api/books');
+    const res = await fetch('http://localhost:3000/api/books?page=1&limit=1000');
     const data = await res.json();
     setBooks(data.data || []);
     setFilteredBooks(data.data || []);
@@ -151,38 +151,33 @@ export default function CustomerDashboard() {
       {/* Book Grid */}
       <div className="px-6 pb-10 grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 xl:grid-cols-7 gap-6 justify-items-center">
         {paginatedBooks.map((book) => (
-          <div key={book.book_id} className="relative group w-40">
-            {/* Hover overlay */}
-            <div className="absolute inset-0 bg-black bg-opacity-20 opacity-0 group-hover:opacity-100 transition duration-300 z-10 rounded-xl"></div>
-
-            {/* Book card */}
-            <Link href={`/book/${book.book_id}`}>
-              <div className="relative z-0 bg-white rounded-xl shadow-sm group-hover:shadow-xl group-hover:scale-105 transform transition duration-300 p-4 w-40 cursor-pointer">
-                {book.cover_image_url?.startsWith('http') && (
-                  <div className="w-full h-60 flex items-center justify-center bg-gray-100 rounded mb-2 overflow-hidden">
-                    <img
-                      src={book.cover_image_url}
-                      alt={book.title}
-                      className="h-full object-contain"
-                    />
-                  </div>
-                )}
-                <h3 className="font-bold text-sm truncate">{book.title}</h3>
-                <p className="text-xs text-gray-500 mb-1 truncate">{book.author_name}</p>
-                <p className="text-blue-600 font-bold text-sm">৳{book.price}</p>
-                <div className="text-xs mt-1 text-gray-700">In cart: {getQuantityInCart(book.book_id)}</div>
-              </div>
-            </Link>
-
-            {/* Add to Cart Button */}
-            <button
-              onClick={() => handleAddToCart(book.book_id)}
-              className="absolute hidden group-hover:flex items-center justify-center bg-slate-700 text-white text-sm px-3 py-2 transition hover:bg-slate-600 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20 whitespace-nowrap"
-            >
-              Add to Cart
-            </button>
-
-          </div>
+          <div key={book.book_id} className="w-40 bg-white rounded-xl shadow-sm hover:shadow-md transition p-4 flex flex-col justify-between">
+          <Link href={`/book/${book.book_id}`}>
+            <div>
+              {book.cover_image_url?.startsWith('http') && (
+                <div className="w-full h-60 flex items-center justify-center bg-gray-100 rounded mb-2 overflow-hidden">
+                  <img
+                    src={book.cover_image_url}
+                    alt={book.title}
+                    className="h-full object-contain"
+                  />
+                </div>
+              )}
+              <h3 className="font-bold text-sm truncate">{book.title}</h3>
+              <p className="text-xs text-gray-500 mb-1 truncate">{book.author_name}</p>
+              <p className="text-blue-600 font-bold text-sm">৳{book.price}</p>
+              <div className="text-xs mt-1 text-gray-700">In cart: {getQuantityInCart(book.book_id)}</div>
+            </div>
+          </Link>
+        
+          <button
+            onClick={() => handleAddToCart(book.book_id)}
+            className="mt-3 w-full bg-slate-700 text-white text-sm px-3 py-2 rounded hover:bg-slate-600 transition whitespace-nowrap"
+          >
+            Add to Cart
+          </button>
+        </div>
+        
         ))}
       </div>
 

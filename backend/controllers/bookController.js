@@ -405,3 +405,63 @@ export const getBooksInStock = async (req, res) => {
   }
 };
 
+export const getBooksGroupedByCategory = async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT 
+        c.category_id,
+        c.category_name,
+        b.book_id,
+        b.title,
+        b.cover_image_url,
+        b.price,
+        a.author_name,
+        i.quantity
+      FROM category c
+      JOIN bookcategory bc ON c.category_id = bc.category_id
+      JOIN book b ON bc.book_id = b.book_id
+      JOIN author a ON b.author_id = a.author_id
+      JOIN inventory i ON b.book_id = i.book_id
+      WHERE i.quantity > 0
+      ORDER BY c.category_id, b.book_id;
+    `);
+
+    const grouped = {};
+
+    for (const row of result.rows) {
+      const {
+        category_id,
+        category_name,
+        book_id,
+        title,
+        cover_image_url,
+        price,
+        author_name,
+        quantity,
+      } = row;
+
+      if (!grouped[category_id]) {
+        grouped[category_id] = {
+          category_id,
+          category_name,
+          books: [],
+        };
+      }
+
+      grouped[category_id].books.push({
+        book_id,
+        title,
+        cover_image_url,
+        price,
+        author_name,
+        quantity,
+      });
+    }
+
+    res.status(200).json(Object.values(grouped));
+  } catch (error) {
+    console.error('🔥 ERROR in getBooksGroupedByCategory:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+

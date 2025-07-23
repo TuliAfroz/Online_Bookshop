@@ -11,6 +11,9 @@ router.get('/in-stock', bookController.getBooksInStock);
 router.get('/author/:id', bookController.getBooksByAuthor);
 router.get('/publisher/:publisherId', bookController.getBooksByPublisher);
 
+router.get('/by-category', bookController.getBooksGroupedByCategory);
+
+
 router.get('/:book_id', bookController.getBook);
 router.put('/:book_id', bookController.updateBook);
 router.delete('/:book_id', bookController.deleteBook);

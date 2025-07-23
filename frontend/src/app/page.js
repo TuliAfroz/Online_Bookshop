@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import React from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -20,15 +21,18 @@ export default function HomePage() {
   const [totalPages, setTotalPages] = useState(1);
   const [activeView, setActiveView] = useState('books');
   const [inStockMode, setInStockMode] = useState(false);
+  const [categorySections, setCategorySections] = useState([]);
 
   const booksPerPage = 18;
 
   // 🌐 Fetch data on page load or when activeView/currentPage changes
   useEffect(() => {
-    if (activeView === 'books') {
+    if (activeView === 'categories') {
+      fetchCategoriesWithBooks(); // ✅ Now this will run correctly
+    } else if (activeView === 'books') {
       if (inStockMode) {
-        fetchBooksInStock(currentPage); // ✅ call with currentPage!
-      }else if (activeAuthor !== null) {
+        fetchBooksInStock(currentPage);
+      } else if (activeAuthor !== null) {
         fetchBooksByAuthor(activeAuthor);
       } else if (activePublisher !== null) {
         fetchBooksByPublisher(activePublisher);
@@ -40,7 +44,8 @@ export default function HomePage() {
     } else if (activeView === 'publications') {
       fetchPublishers(currentPage);
     }
-  }, [activeView, currentPage, activeAuthor, activePublisher,inStockMode]);
+  }, [activeView, currentPage, activeAuthor, activePublisher, inStockMode]);
+  
 
   // 🔍 Search functionality (only searches books)
   useEffect(() => {
@@ -71,7 +76,15 @@ export default function HomePage() {
       console.error('Failed to fetch books:', err);
     }
   };
-
+  const fetchCategoriesWithBooks = async () => {
+    try {
+      const res = await fetch('http://localhost:3000/api/books/by-category');
+      const data = await res.json();
+      setCategorySections(data || []);
+    } catch (err) {
+      console.error('Failed to fetch categories:', err);
+    }
+  };
   // 📚 Fetch books by author
   const fetchBooksByAuthor = async (authorId) => {
     try {
@@ -313,6 +326,54 @@ export default function HomePage() {
             </button>
           ))}
       </div>
+      {/* Categories view */}
+      {activeView === 'categories' && categorySections.map((category) => {
+  const scrollRef = React.createRef();
+
+  const scrollLeft = () => {
+    if (scrollRef.current) scrollRef.current.scrollBy({ left: -400, behavior: 'smooth' });
+  };
+
+  const scrollRight = () => {
+    if (scrollRef.current) scrollRef.current.scrollBy({ left: 400, behavior: 'smooth' });
+  };
+
+  return (
+    <div
+      key={category.category_id}
+      className="bg-white shadow-md rounded-xl p-6 mb-10 max-w-6xl mx-auto"
+    >
+      <h2 className="text-xl font-semibold mb-4">{category.category_name}</h2>
+      <div className="flex items-center">
+        <button onClick={scrollLeft} className="text-2xl px-3">←</button>
+        <div
+          ref={scrollRef}
+          className="flex overflow-x-auto space-x-4 scrollbar-hide px-4"
+        >
+          {category.books.map((book) => (
+            <Link href={`/book/${book.book_id}`} key={book.book_id}>
+              <div className="bg-gray-50 rounded-xl shadow hover:shadow-xl transform hover:scale-105 transition duration-300 ease-in-out p-4 cursor-pointer w-40 shrink-0">
+                {book.cover_image_url?.startsWith('http') && (
+                  <div className="w-full h-60 flex items-center justify-center bg-gray-100 rounded mb-2 overflow-hidden">
+                    <img
+                      src={book.cover_image_url}
+                      alt={book.title}
+                      className="h-full object-contain"
+                    />
+                  </div>
+                )}
+                <h3 className="font-bold text-sm truncate">{book.title}</h3>
+                <p className="text-xs text-gray-500 mb-1 truncate">{book.author_name}</p>
+                <p className="text-blue-600 font-bold text-sm">৳{book.price}</p>
+              </div>
+            </Link>
+          ))}
+        </div>
+        <button onClick={scrollRight} className="text-2xl px-3">→</button>
+      </div>
+    </div>
+  );
+})}
 
       {/* Pagination for books, authors, publishers */}
       {(activeView === 'books' || activeView === 'authors' || activeView === 'publications') && (
