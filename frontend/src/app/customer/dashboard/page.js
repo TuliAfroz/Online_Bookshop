@@ -130,10 +130,27 @@ export default function CustomerDashboard() {
           </button>
           {showDropdown && (
             <div className="absolute right-0 mt-2 w-40 bg-white rounded shadow z-10 text-sm">
-              <button className="block w-full text-left px-4 py-2 hover:bg-gray-100" onClick={() => router.push('/customer/profile')}>My Profile</button>
-              <button className="block w-full text-left px-4 py-2 hover:bg-gray-100" onClick={handleLogout}>Sign Out</button>
+              <button
+                className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                onClick={() => router.push('/customer/profile')}
+              >
+                My Profile
+              </button>
+              <button
+                className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                onClick={() => router.push('/customer/reviews')}
+              >
+                Reviews
+              </button>
+              <button
+                className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                onClick={handleLogout}
+              >
+                Sign Out
+              </button>
             </div>
           )}
+
         </div>
       </div>
 

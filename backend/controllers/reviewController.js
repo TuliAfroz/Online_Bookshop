@@ -3,14 +3,30 @@ import db from '../config/db.js';
 // Add a new review
 export const addReview = async (req, res) => {
   const { book_id, customer_id, rating, description } = req.body;
+
   try {
-    const newReview = await db.query(
+    // Insert the review
+    const insertedReview = await db.query(
       `INSERT INTO review (book_id, customer_id, rating, description)
        VALUES ($1, $2, $3, $4)
-       RETURNING *`,
+       RETURNING book_id, customer_id, rating, description`
+      ,
       [book_id, customer_id, rating, description]
     );
-    res.status(201).json(newReview.rows[0]);
+
+    // Get the inserted review row
+    const review = insertedReview.rows[0];
+
+    // Optionally join with book title to send back
+    const reviewWithBook = await db.query(
+      `SELECT r.book_id, b.title AS book_title, r.rating, r.description
+       FROM review r
+       JOIN book b ON r.book_id = b.book_id
+       WHERE r.book_id = $1 AND r.customer_id = $2`,
+      [review.book_id, review.customer_id]
+    );
+
+    res.status(201).json(reviewWithBook.rows[0]);
   } catch (err) {
     if (err.message.includes('has not purchased')) {
       return res.status(403).json({ error: 'You can only review books you purchased' });
