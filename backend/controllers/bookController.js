@@ -61,6 +61,7 @@ export const getAllBooks = async(req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }  
 };
+
 export const createBook = async (req, res) => {
   const {
     Book_ID, Title, Description,
@@ -108,12 +109,12 @@ export const createBook = async (req, res) => {
     );
 
     if (existingBook.rows.length > 0) {
-      // 🔁 Book exists → just update inventory count
-      await pool.query(
-        `UPDATE Inventory SET Quantity = Quantity + 1 WHERE Book_ID = $1`,
-        [Book_ID]
-      );
-      return res.status(200).json({ message: 'Book already exists. Inventory count incremented.' });
+      // // 🔁 Book exists → just update inventory count
+      // await pool.query(
+      //   `UPDATE Inventory SET Quantity = Quantity + 1 WHERE Book_ID = $1`,
+      //   [Book_ID]
+      // );
+      return res.status(200).json({ message: 'Book already exists.' });
     }
     // 1. Insert book
     const bookResult = await pool.query(
@@ -132,13 +133,13 @@ export const createBook = async (req, res) => {
     );
     await Promise.all(categoryPromises);
 
-    // Add to Inventory (initial count = 1)
-    await pool.query(
-      `INSERT INTO Inventory (Book_ID, Quantity) VALUES ($1, 1)`,
-      [Book_ID]
-    );
+    // // Add to Inventory (initial count = 1)
+    // await pool.query(
+    //   `INSERT INTO Inventory (Book_ID, Quantity) VALUES ($1, 1)`,
+    //   [Book_ID]
+    // );
 
-    console.log('✅ Book and inventory inserted:', req.body);
+    console.log('✅ Book  inserted:', req.body);
 
     res.status(201).json({ success: true, data: bookResult.rows[0] });
 

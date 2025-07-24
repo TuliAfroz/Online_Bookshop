@@ -12,11 +12,12 @@ export const getAllPublishers = async (req, res) => {
 
     // Get paginated publishers
     const result = await pool.query(
-      'SELECT publisher_id, publisher_name, publisher_img_url FROM publisher ORDER BY publisher_id ASC LIMIT $1 OFFSET $2',
+      'SELECT publisher_id, publisher_name, phone_no, publisher_img_url FROM publisher ORDER BY publisher_id ASC LIMIT $1 OFFSET $2',
       [limit, offset]
     );
 
-    res.status(200).json({ data: result.rows, total });
+    res.status(200).json({ success: true, data: result.rows, total }); // ✅ add success
+
   } catch (error) {
     console.error('Error fetching publishers:', error);
     res.status(500).json({ error: 'Internal Server Error' });
