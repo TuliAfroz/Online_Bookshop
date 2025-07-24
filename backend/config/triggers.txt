@@ -76,9 +76,9 @@ v_total_discount := (v_subtotal * v_point_discount_rate) + (v_subtotal * v_gift_
 
   UPDATE orders
 SET
-  subtotal_price = subtotal_price,
-  discount = discount,
-  total_price = total_price
+  subtotal_price = v_subtotal,
+  discount = v_total_discount,
+  total_price = NEW.Total_price
 WHERE order_id = NEW.order_id;
 
 
@@ -91,8 +91,6 @@ CREATE OR REPLACE TRIGGER trg_process_order
 BEFORE INSERT ON Orders
 FOR EACH ROW
 EXECUTE FUNCTION process_order_on_insert();
-
-____________________________________________________________________________________________________________________
 
 CREATE OR REPLACE FUNCTION handle_payment_post_insert()
 RETURNS TRIGGER AS $$
@@ -168,7 +166,7 @@ BEGIN
 
   UPDATE Point SET Level = v_level WHERE Customer_ID = v_customer_id;
 
-  -- 7. Clear latest cart
+  -- 7. set cart status
   SELECT Cart_ID INTO v_cart_id
   FROM Cart
   WHERE Customer_ID = v_customer_id
@@ -176,14 +174,17 @@ BEGIN
   LIMIT 1;
 
   IF v_cart_id IS NOT NULL THEN
-    DELETE FROM CartItem WHERE Cart_ID = v_cart_id;
+    UPDATE cart
+    SET 
+    status=TRUE
+    where cart_id=v_cart_id;
     --DELETE FROM Cart WHERE Cart_ID = v_cart_id;
   END IF;
 
   UPDATE payment
   SET 
   points_earned=v_point
-  where payer_customer_id=NEW.payer_customer_id;
+  where payer_customer_id=NEW.payer_customer_id AND order_id=NEW.order_id;
   
 
   RETURN NULL;
@@ -199,7 +200,6 @@ FOR EACH ROW
 EXECUTE FUNCTION handle_payment_post_insert();
 
 
---------------------------------------------------trigger for checking bought bookd--------------------
 
 CREATE OR REPLACE FUNCTION enforce_review_purchase_check()
 RETURNS TRIGGER AS $$
@@ -209,8 +209,10 @@ BEGIN
     SELECT COUNT(*) INTO purchase_count
     FROM orders o
     JOIN cartitem ci ON ci.cart_id = o.cart_id
+    JOIN cart c ON c.cart_id = o.cart_id
     WHERE o.customer_id = NEW.customer_id
-      AND ci.book_id = NEW.book_id;
+      AND ci.book_id = NEW.book_id
+      AND c.status = TRUE;  -- Only count purchased carts
 
     IF purchase_count = 0 THEN
         RAISE EXCEPTION 'Customer % has not purchased book %', NEW.customer_id, NEW.book_id;
@@ -219,11 +221,120 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
-
-
 CREATE OR REPLACE TRIGGER trg_review_purchase_check
 BEFORE INSERT OR UPDATE ON review
 FOR EACH ROW
 EXECUTE FUNCTION enforce_review_purchase_check();
+-- Trigger Function: Before inserting into publisher_order (validate balance and apply discount)
+CREATE OR REPLACE FUNCTION validate_and_place_publisher_order()
+RETURNS TRIGGER AS $$
+DECLARE
+    final_amount NUMERIC;
+    admin_balance NUMERIC;
+BEGIN
+    -- Apply 5% discount
+    final_amount := NEW.total_amount * 0.95;
 
+    -- Get balance of admin 101
+    SELECT balance INTO admin_balance FROM admin WHERE admin_id = 101;
+
+    IF final_amount > admin_balance THEN
+        RAISE EXCEPTION 'Insufficient balance in admin 101''s account. Cannot place order.';
+    END IF;
+
+    -- Update order total to discounted value
+    NEW.total_amount := final_amount;
+    NEW.status := 'pending';
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE TRIGGER trg_validate_and_place_publisher_order
+BEFORE INSERT ON publisher_order
+FOR EACH ROW
+EXECUTE FUNCTION validate_and_place_publisher_order();
+
+
+-- Trigger Function: After publisher confirms the order
+CREATE OR REPLACE FUNCTION notify_admin_to_pay()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.status = 'confirmed' THEN
+        RAISE NOTICE 'Order % confirmed. Admin should now proceed to payment.', NEW.publisher_order_id;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE TRIGGER trg_notify_admin_to_pay
+AFTER UPDATE ON publisher_order
+FOR EACH ROW
+WHEN (OLD.status = 'pending' AND NEW.status = 'confirmed')
+EXECUTE FUNCTION notify_admin_to_pay();
+
+
+-- Trigger Function: After payment, deduct balance and update inventory
+CREATE OR REPLACE FUNCTION handle_payment_post_insert()
+RETURNS TRIGGER AS $$
+DECLARE
+    b_id INT;
+    qty INT;
+BEGIN
+    IF NEW.publisher_order_id IS NOT NULL THEN
+        -- Deduct from admin 101's balance
+        UPDATE admin
+        SET balance = balance - NEW.amount
+        WHERE admin_id = 101;
+
+        -- Update inventory for each book in the order
+        FOR b_id, qty IN
+            SELECT book_id, quantity
+            FROM publisher_order_item
+            WHERE publisher_order_id = NEW.publisher_order_id
+        LOOP
+            UPDATE inventory
+            SET quantity = quantity + qty
+            WHERE book_id = b_id;
+        END LOOP;
+
+        -- Update order status to completed
+        UPDATE publisher_order
+        SET status = 'completed'
+        WHERE publisher_order_id = NEW.publisher_order_id;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Re-create the trigger if needed
+CREATE OR REPLACE TRIGGER trg_handle_payment
+AFTER INSERT ON payment
+FOR EACH ROW
+EXECUTE FUNCTION handle_payment_post_insert();
+
+
+-- Trigger Function: Before update to cancel order
+CREATE OR REPLACE FUNCTION prevent_cancel_after_payment()
+RETURNS TRIGGER AS $$
+DECLARE
+    payment_exists BOOLEAN;
+BEGIN
+    SELECT EXISTS (
+        SELECT 1 FROM payment
+        WHERE publisher_order_id = OLD.publisher_order_id
+    ) INTO payment_exists;
+
+    IF payment_exists THEN
+        RAISE EXCEPTION 'Cannot cancel an order after payment has been made.';
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE TRIGGER trg_prevent_cancel_after_payment
+BEFORE UPDATE ON publisher_order
+FOR EACH ROW
+WHEN (NEW.status = 'cancelled')
+EXECUTE FUNCTION prevent_cancel_after_payment();

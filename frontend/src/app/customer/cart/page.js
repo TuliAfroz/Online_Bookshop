@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import axios from 'axios';
 import { getCustomerIdFromToken } from '../../utils/getCustomerId';
 import { Trash2 } from 'lucide-react';
 
@@ -12,30 +13,40 @@ export default function CustomerCartPage() {
   const [transactionId, setTransactionId] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('');
   const [giftcards, setGiftcards] = useState([]);
-  const [selectedGiftcard, setSelectedGiftcard] = useState('');
+  const [selectedGiftcards, setSelectedGiftcards] = useState([]);
   const [usePoints, setUsePoints] = useState(false);
-  const [giftcardDiscount, setGiftcardDiscount] = useState(0);
-  const [pointsDiscount, setPointsDiscount] = useState(0);
   const [finalSubtotal, setFinalSubtotal] = useState(0);
   const [finalDiscount, setFinalDiscount] = useState(0);
   const [finalTotalPayable, setFinalTotalPayable] = useState(0);
 
   const customerId = getCustomerIdFromToken();
 
+  // Fetch giftcards
   useEffect(() => {
     if (!customerId) return;
 
     const fetchGiftcards = async () => {
-        try {
-            const response = await axios.get(`http://localhost:5000/api/giftcards/customer/${customerId}`);
-            setGiftcards(response.data?.giftcards || []);
-        } catch (error) {
-            console.error('Error fetching giftcards:', error);
-            setGiftcards([]);
+      try {
+        const response = await axios.get(`http://localhost:3000/api/giftcards/customer/${customerId}`);
+        console.log("Giftcards API response:", response.data);
+
+        if (Array.isArray(response.data.giftcard)) {
+          setGiftcards(response.data.giftcard);
+        } else if (Array.isArray(response.data.giftcards)) {
+          setGiftcards(response.data.giftcards);
+        } else {
+          setGiftcards([]);
         }
+      } catch (error) {
+        console.error('Error fetching giftcards:', error.response || error.message);
+        setGiftcards([]);
+      }
     };
+
+    fetchGiftcards();
   }, [customerId]);
 
+  // Fetch cart items
   useEffect(() => {
     if (!customerId) return;
     fetch(`http://localhost:3000/api/cart/${customerId}`)
@@ -49,9 +60,7 @@ export default function CustomerCartPage() {
       .catch(err => console.error('Failed to fetch cart:', err));
   }, [customerId]);
 
-  // Remove local discount calculations as they will come from backend
-  
-
+  // Place order
   const handlePlaceOrder = async () => {
     try {
       const res = await fetch('http://localhost:3000/api/orders/place', {
@@ -60,7 +69,7 @@ export default function CustomerCartPage() {
         body: JSON.stringify({
           customer_id: customerId,
           use_points: usePoints,
-          giftcard_ids: selectedGiftcard ? [selectedGiftcard] : [],
+          giftcard_ids: selectedGiftcards, // array of giftcard IDs
         }),
       });
 
@@ -70,7 +79,7 @@ export default function CustomerCartPage() {
         setOrderPlaced(true);
         setOrderId(data.order.order_id);
 
-        // Fetch updated order details from backend
+        // Fetch updated order details
         const orderDetailsRes = await fetch(`http://localhost:3000/api/orders/details/${data.order.order_id}`);
         const orderDetails = await orderDetailsRes.json();
 
@@ -81,7 +90,6 @@ export default function CustomerCartPage() {
         } else {
           console.error('Failed to fetch order details:', orderDetails.error);
         }
-
       } else {
         alert('❌ Order failed: ' + data.error);
       }
@@ -91,6 +99,7 @@ export default function CustomerCartPage() {
     }
   };
 
+  // Cancel order
   const handleCancelOrder = async () => {
     if (!orderId) return;
 
@@ -115,6 +124,7 @@ export default function CustomerCartPage() {
     }
   };
 
+  // Make payment
   const handlePayment = async () => {
     if (!transactionId || !paymentMethod) {
       alert('Please enter transaction ID and select a payment method.');
@@ -151,6 +161,7 @@ export default function CustomerCartPage() {
     }
   };
 
+  // Update cart quantity
   const handleUpdateQuantity = async (bookId, type) => {
     try {
       const endpoint = type === 'remove' ? 'remove' : 'add';
@@ -179,7 +190,6 @@ export default function CustomerCartPage() {
 
   return (
     <div className="min-h-screen bg-white-50">
-      
       <div className="max-w-5xl mx-auto p-6">
         <h2 className="text-2xl font-bold mb-4">Your Cart</h2>
 
@@ -243,6 +253,52 @@ export default function CustomerCartPage() {
               Subtotal: <span className="text-green-700">৳{subtotal.toFixed(2)}</span>
             </div>
 
+            {/* Giftcard and Points Selection */}
+            <div className="mt-6 space-y-4 border-t pt-4">
+              <div>
+                <label className="block mb-1 font-medium">Use Giftcard(s)</label>
+                {giftcards.length === 0 ? (
+                  <p className="text-gray-500">No giftcards available</p>
+                ) : (
+                  <div className="space-y-2">
+                    {giftcards.map((g) => (
+                      <label key={g.card_id} className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          value={g.card_id}
+                          checked={selectedGiftcards.includes(g.card_id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedGiftcards((prev) => [...prev, g.card_id]);
+                            } else {
+                              setSelectedGiftcards((prev) =>
+                                prev.filter((id) => id !== g.card_id)
+                              );
+                            }
+                          }}
+                        />
+                        <span>
+                          {g.card_id} ({g.amount}% off)
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block mb-1 font-medium">Use Points</label>
+                <select
+                  className="p-2 border rounded w-full"
+                  value={usePoints ? 'true' : 'false'}
+                  onChange={(e) => setUsePoints(e.target.value === 'true')}
+                >
+                  <option value="false">No</option>
+                  <option value="true">Yes</option>
+                </select>
+              </div>
+            </div>
+
             <div className="text-right pt-6">
               <button
                 onClick={handlePlaceOrder}
@@ -254,34 +310,6 @@ export default function CustomerCartPage() {
 
             {orderPlaced && (
               <div className="mt-6 space-y-4 border-t pt-4">
-                <div>
-                  <label className="block mb-1 font-medium">Use Giftcard</label>
-                  <select
-                    className="p-2 border rounded w-full"
-                    value={selectedGiftcard}
-                    onChange={(e) => setSelectedGiftcard(e.target.value)}
-                  >
-                    <option value="">Select a Giftcard</option>
-                    {giftcards.map(g => (
-                      <option key={g.giftcard_id} value={g.giftcard_id}>
-                        {g.code} (৳{g.balance})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block mb-1 font-medium">Use Points</label>
-                  <select
-                    className="p-2 border rounded w-full"
-                    value={usePoints ? 'true' : 'false'}
-                    onChange={(e) => setUsePoints(e.target.value === 'true')}
-                  >
-                    <option value="false">No</option>
-                    <option value="true">Yes</option>
-                  </select>
-                </div>
-
                 <div className="bg-gray-100 p-4 rounded-lg shadow-inner">
                   <h3 className="font-semibold mb-2">Order Summary</h3>
                   <div className="flex justify-between text-sm">

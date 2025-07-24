@@ -3,6 +3,6 @@ import { getGiftcardsByCustomer } from '../controllers/GiftCardController.js';
 
 const router = express.Router();
 
-router.get('/:customer_id', getGiftcardsByCustomer);
+router.get('/customer/:customer_id', getGiftcardsByCustomer);
 
 export default router;
