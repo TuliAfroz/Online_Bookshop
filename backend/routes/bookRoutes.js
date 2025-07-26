@@ -19,5 +19,7 @@ router.put('/:book_id', bookController.updateBook);
 router.delete('/:book_id', bookController.deleteBook);
 router.put('/inventory/:book_id', bookController.updateInventory);
 
+// router.put('/update-price/:bookId', bookController.updateBookPrice);
+
 
 export default router;

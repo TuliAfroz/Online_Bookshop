@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { getPublisherIdFromToken } from '../../utils/getPublisherId'; // update path if needed
 
-export default function BookSearch() {
+export default function SearchOwnBooks() {
   const [searchTerm, setSearchTerm] = useState('');
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -12,15 +13,26 @@ export default function BookSearch() {
 
   const booksPerPage = 18;
 
-  const fetchBooks = async () => {
+  const fetchBooks = async (query = '') => {
+    const publisherId = getPublisherIdFromToken();
+    if (!publisherId) {
+      setError('Unauthorized: No publisher ID found.');
+      return;
+    }
+
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('http://localhost:3000/api/books/search');
+      const url = new URL(`http://localhost:3000/api/books/publisher/${publisherId}`);
+      if (query) url.searchParams.append('query', query);
+
+      const res = await fetch(url.toString());
       const contentType = res.headers.get('content-type');
       if (!contentType?.includes('application/json')) throw new Error('Invalid response format.');
+
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to fetch books');
+
       setBooks(data.data || []);
       setCurrentPage(1);
     } catch (err) {
@@ -31,48 +43,33 @@ export default function BookSearch() {
     }
   };
 
-  const handleSearch = async () => {
-    if (!searchTerm.trim()) return fetchBooks();
-    setLoading(true);
-    setError('');
-    try {
-      const res = await fetch(`http://localhost:3000/api/books/search?query=${encodeURIComponent(searchTerm)}`);
-      const contentType = res.headers.get('content-type');
-      if (!contentType?.includes('application/json')) throw new Error('Invalid response format.');
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Search failed');
-      setBooks(data.data || []);
-      setCurrentPage(1);
-    } catch (err) {
-      setError(err.message || 'Something went wrong.');
-      setBooks([]);
-    } finally {
-      setLoading(false);
-    }
+  const handleSearch = () => {
+    fetchBooks(searchTerm.trim());
   };
 
-  useEffect(() => { fetchBooks(); }, []);
+  useEffect(() => {
+    fetchBooks();
+  }, []);
+
   useEffect(() => {
     const delay = setTimeout(() => handleSearch(), 300);
     return () => clearTimeout(delay);
   }, [searchTerm]);
 
+  // Pagination logic for current page slice
   const indexOfLastBook = currentPage * booksPerPage;
   const indexOfFirstBook = indexOfLastBook - booksPerPage;
   const currentBooks = books.slice(indexOfFirstBook, indexOfLastBook);
   const totalPages = Math.ceil(books.length / booksPerPage);
 
-  const goToPrevPage = () => currentPage > 1 && setCurrentPage((p) => p - 1);
-  const goToNextPage = () => currentPage < totalPages && setCurrentPage((p) => p + 1);
-
   return (
-    <div className="min-h-screen bg-gray-50 relative">
-      <h1 className="text-2xl font-bold mb-6 text-center">Books</h1>
+    <div className="min-h-screen bg-gray-50 p-4">
+      <h1 className="text-2xl font-bold mb-6 text-center">My Books</h1>
 
       <div className="flex gap-2 max-w-2xl mx-auto mb-8">
         <input
           type="text"
-          placeholder="Search by title, author, or category..."
+          placeholder="Search by title, author or catagory..."
           className="w-full p-2 border border-gray-300 rounded-xl"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
@@ -85,10 +82,10 @@ export default function BookSearch() {
         </button>
       </div>
 
-      {loading && <p className="text-center">Searching...</p>}
+      {loading && <p className="text-center">Loading books...</p>}
       {error && <p className="text-red-600 text-center">{error}</p>}
       {!loading && books.length === 0 && !error && (
-        <p className="text-gray-500 text-center">No results found.</p>
+        <p className="text-gray-500 text-center">No books found.</p>
       )}
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 xl:grid-cols-6 gap-6">
@@ -120,54 +117,56 @@ export default function BookSearch() {
         ))}
       </div>
 
-          {/* Pagination */}
-          <div className="flex justify-center mt-10 space-x-2">
-            <button
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage(currentPage - 1)}
-              className="px-3 py-1 border rounded disabled:opacity-50"
-            >
-              &lt;
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex justify-center mt-10 space-x-2">
+          <button
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage(currentPage - 1)}
+            className="px-3 py-1 border rounded disabled:opacity-50"
+          >
+            &lt;
+          </button>
+
+          {currentPage > 2 && (
+            <>
+              <button onClick={() => setCurrentPage(1)} className="px-3 py-1 border rounded">1</button>
+              {currentPage > 3 && <span className="px-2">...</span>}
+            </>
+          )}
+
+          {currentPage > 1 && (
+            <button onClick={() => setCurrentPage(currentPage - 1)} className="px-3 py-1 border rounded">
+              {currentPage - 1}
             </button>
+          )}
 
-            {currentPage > 2 && (
-              <>
-                <button onClick={() => setCurrentPage(1)} className="px-3 py-1 border rounded">1</button>
-                {currentPage > 3 && <span className="px-2">...</span>}
-              </>
-            )}
+          <span className="px-3 py-1 border rounded bg-slate-700 text-white">{currentPage}</span>
 
-            {currentPage > 1 && (
-              <button onClick={() => setCurrentPage(currentPage - 1)} className="px-3 py-1 border rounded">
-                {currentPage - 1}
-              </button>
-            )}
-
-            <span className="px-3 py-1 border rounded bg-slate-700 text-white">{currentPage}</span>
-
-            {currentPage < totalPages && (
-              <button onClick={() => setCurrentPage(currentPage + 1)} className="px-3 py-1 border rounded">
-                {currentPage + 1}
-              </button>
-            )}
-
-            {currentPage < totalPages - 1 && (
-              <>
-                {currentPage < totalPages - 2 && <span className="px-2">...</span>}
-                <button onClick={() => setCurrentPage(totalPages)} className="px-3 py-1 border rounded">
-                  {totalPages}
-                </button>
-              </>
-            )}
-
-            <button
-              disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage(currentPage + 1)}
-              className="px-3 py-1 border rounded disabled:opacity-50"
-            >
-              &gt;
+          {currentPage < totalPages && (
+            <button onClick={() => setCurrentPage(currentPage + 1)} className="px-3 py-1 border rounded">
+              {currentPage + 1}
             </button>
-          </div>
+          )}
+
+          {currentPage < totalPages - 1 && (
+            <>
+              {currentPage < totalPages - 2 && <span className="px-2">...</span>}
+              <button onClick={() => setCurrentPage(totalPages)} className="px-3 py-1 border rounded">
+                {totalPages}
+              </button>
+            </>
+          )}
+
+          <button
+            disabled={currentPage === totalPages}
+            onClick={() => setCurrentPage(currentPage + 1)}
+            className="px-3 py-1 border rounded disabled:opacity-50"
+          >
+            &gt;
+          </button>
+        </div>
+      )}
     </div>
   );
 }

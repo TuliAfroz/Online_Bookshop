@@ -24,7 +24,7 @@ export default function CategoryList() {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-4 text-center">All Categories</h2>
+      <h2 className="text-2xl font-bold mb-4 text-center">Categories</h2>
       {categories.length === 0 ? (
         <p className="text-gray-500">No categories available.</p>
       ) : (

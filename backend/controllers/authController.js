@@ -122,8 +122,38 @@ export const login = async (req, res) => {
 
       return res.status(200).json({ message: 'Customer login successful', token });
 
-    } else {
-      return res.status(400).json({ error: 'Role must be admin or customer' });
+    }  else if (role === 'publisher') {
+      const id = req.body.publisher_id;
+      if (!id || !password) {
+        return res.status(400).json({ error: 'Publisher ID and password required' });
+      }
+
+      const result = await pool.query(
+        'SELECT * FROM Publisher WHERE Publisher_ID = $1',
+        [id]
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: 'Publisher not found' });
+      }
+
+      const publisher = result.rows[0];
+
+      if (password !== publisher.password) {
+        return res.status(401).json({ error: 'Invalid password' });
+      }
+      
+
+      const token = jwt.sign(
+        { id: publisher.publisher_id, role: 'publisher' },
+        JWT_SECRET,
+        { expiresIn: '1h' }
+      );
+
+      return res.status(200).json({ message: 'Publisher login successful', token });
+
+    }else {
+      return res.status(400).json({ error: 'Role must be admin or customer or publisher' });
     }
   } catch (error) {
     console.error('Login error:', error);

@@ -3,34 +3,24 @@
 import { useState } from 'react';
 import { Menu } from 'lucide-react';
 
-import AddBookForm from './sections/AddBookForm';
-import AddAuthorForm from './sections/AddAuthorForm';
 import AddPublisherForm from './sections/AddPublisherForm';
-import AddCategoryForm from './sections/AddCategoryForm';
 import BookSearch from './sections/BookSearch';
 import PublisherList from './sections/PublisherList';
 import CategoryList from './sections/CategoryList';
-import BookList from './sections/BookList';
 import InventoryList from './sections/InventoryList';
-import ManageInventory from './sections/ManageInventory';
 import AuthorList from './sections/AuthorList';
 import CustomerList from './sections/CustomerList';
 import CustomerDetails from './sections/CustomerDetails';
-// import AdminBuyBooks from './sections/AdminBuyBooks'; // Uncomment if needed
+import BuyBooks from './sections/BuyBooks'; // Uncomment if needed
 
 const tabs = [
-  { key: 'search', label: 'Search Books' },
-  { key: 'view-customers', label: 'View Customers' },
-  { key: 'books', label: 'View Books' },
-  { key: 'add-book', label: 'Add Book' },
+  { key: 'search', label: 'Books' },
+  { key: 'view-customers', label: 'Customers' },
+  { key: 'view-authors', label: 'Authors' },
+  { key: 'publishers', label: 'Publishers' },
+  { key: 'categories', label: 'Categories' },
   { key: 'inventory', label: 'Inventory' },
-  { key: 'manage-inventory', label: 'Manage Inventory' },
-  { key: 'view-authors', label: 'View Authors' },
-  { key: 'add-author', label: 'Add Author' },
-  { key: 'publishers', label: 'View Publishers' },
   { key: 'add-publisher', label: 'Add Publisher' },
-  { key: 'categories', label: 'View Categories' },
-  { key: 'add-category', label: 'Add Category' },
   { key: 'buy-books', label: 'Buy Books' },
   { key: 'logout', label: 'Logout' },
 ];
@@ -84,15 +74,10 @@ export default function AdminDashboard() {
       <div className="p-6 max-w-5xl mx-auto">
         <div className="bg-white p-6 rounded-2xl shadow">
           {activeTab === 'search' && <BookSearch />}
-          {activeTab === 'books' && <BookList />}
-          {activeTab === 'add-book' && <AddBookForm />}
           {activeTab === 'inventory' && <InventoryList />}
-          {activeTab === 'manage-inventory' && <ManageInventory />}
-          {activeTab === 'add-author' && <AddAuthorForm />}
           {activeTab === 'add-publisher' && <AddPublisherForm />}
           {activeTab === 'publishers' && <PublisherList />}
-          {activeTab === 'add-category' && <AddCategoryForm />}
-          {/* {activeTab === 'buy-books' && <AdminBuyBooks />} */}
+          {activeTab === 'buy-books' && <BuyBooks />}
           {activeTab === 'categories' && <CategoryList />}
           {activeTab === 'view-authors' && <AuthorList />}
           {activeTab === 'view-customers' && (

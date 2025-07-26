@@ -349,26 +349,55 @@ export const getBooksByAuthor = async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
-// bookController.js
-
 export const getBooksByPublisher = async (req, res) => {
   try {
     const { publisherId } = req.params;
+    const { query } = req.query;
 
-    const result = await pool.query(
-      `SELECT b.book_id, b.title, b.cover_image_url, b.price, a.author_name
-       FROM book b
-       JOIN author a ON b.author_id = a.author_id
-       WHERE b.publisher_id = $1`,
-      [publisherId]
-    );
+    let sql = `
+      SELECT 
+        b.book_id,
+        b.title,
+        a.author_name,
+        b.price,
+        b.cover_image_url,
+        COALESCE(AVG(r.rating), 0) AS average_rating
+      FROM book b
+      LEFT JOIN author a ON b.author_id = a.author_id
+      LEFT JOIN bookcategory bc ON b.book_id = bc.book_id
+      LEFT JOIN category c ON bc.category_id = c.category_id
+      LEFT JOIN review r ON b.book_id = r.book_id
+      WHERE b.publisher_id = $1
+    `;
 
-    res.status(200).json({ data: result.rows });
+    let params = [publisherId];
+
+    if (query) {
+      sql += `
+        AND (
+          LOWER(b.title) LIKE LOWER($2)
+          OR LOWER(a.author_name) LIKE LOWER($2)
+          OR LOWER(c.category_name) LIKE LOWER($2)
+        )
+      `;
+      params.push(`%${query}%`);
+    }
+
+    sql += `
+      GROUP BY b.book_id, b.title, a.author_name, b.price, b.cover_image_url
+      ORDER BY b.title ASC
+    `;
+
+    const result = await pool.query(sql, params);
+
+    res.status(200).json({ success: true, data: result.rows });
   } catch (error) {
     console.error('Error fetching books by publisher:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+
+
 export const getBooksInStock = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -466,3 +495,47 @@ export const getBooksGroupedByCategory = async (req, res) => {
   }
 };
 
+// export const updateBookPrice = async (req, res) => {
+//   const { bookId } = req.params;
+//   const { newPrice } = req.body;
+
+//   console.log('Received updateBookPrice request');
+//   console.log('Params:', req.params);
+//   console.log('Body:', req.body);
+
+//   try {
+//     const numericPrice = parseFloat(newPrice);
+//     const numericBookId = parseInt(bookId, 10);
+
+//     console.log('Parsed numericPrice:', numericPrice);
+//     console.log('Parsed numericBookId:', numericBookId);
+
+//     if (isNaN(numericPrice)) {
+//       console.error('Invalid price:', newPrice);
+//       return res.status(400).json({ error: 'Invalid new price' });
+//     }
+
+//     if (isNaN(numericBookId)) {
+//       console.error('Invalid bookId:', bookId);
+//       return res.status(400).json({ error: 'Invalid book ID' });
+//     }
+
+//     const result = await db.query(
+//       'UPDATE book SET price = $1 WHERE book_id = $2 RETURNING *',
+//       [numericPrice, numericBookId]
+//     );
+
+//     console.log('DB update result:', result);
+
+//     if (result.rowCount === 0) {
+//       console.warn('No book found with id:', numericBookId);
+//       return res.status(404).json({ error: 'Book not found' });
+//     }
+
+//     console.log('Price updated successfully for book_id:', numericBookId);
+//     res.status(200).json({ message: 'Price updated successfully', book: result.rows[0] });
+//   } catch (err) {
+//     console.error('Error updating book price:', err);
+//     res.status(500).json({ error: 'Internal server error' });
+//   }
+// };

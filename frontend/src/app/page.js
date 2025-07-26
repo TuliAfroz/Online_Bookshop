@@ -190,6 +190,12 @@ export default function HomePage() {
             >
               Customer
             </button>
+            <button
+              className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+              onClick={() => router.push('/publisher/login')}
+            >
+              Publisher
+            </button>
           </div>
         </div>
 
@@ -211,6 +217,7 @@ export default function HomePage() {
             >
               Customer
             </button>
+
           </div>
         </div>
       </div>
