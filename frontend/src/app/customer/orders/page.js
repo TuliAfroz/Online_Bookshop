@@ -16,8 +16,8 @@ export default function OrdersPage() {
   const [error, setError] = useState('');
 
   const handleLogout = () => {
-    alert('Logout clicked!');
-    router.push('/login');
+    localStorage.removeItem('token');
+    router.push('/');
   };
 
   useEffect(() => {

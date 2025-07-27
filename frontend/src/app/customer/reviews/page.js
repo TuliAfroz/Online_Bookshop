@@ -123,6 +123,11 @@ export default function CustomerReviews() {
             setMessage(result.message || 'Failed to delete review');
         }
     };
+    
+    const handleLogout = () => {
+        localStorage.removeItem('token');
+        router.push('/');
+      };
 
     const startEdit = (review) => {
         setEditingReview(review);

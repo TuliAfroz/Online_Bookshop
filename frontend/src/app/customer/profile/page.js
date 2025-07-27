@@ -33,6 +33,10 @@ export default function CustomerProfile() {
       .catch(console.error);
   }, []);
   
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    router.push('/');
+  };
 
   const handleChangePassword = async () => {
     if (!newPassword) return;

@@ -212,6 +212,13 @@ export default function CustomerDashboard() {
               )}
               <h3 className="font-bold text-sm truncate">{book.title}</h3>
               <p className="text-xs text-gray-500 mb-1 truncate">{book.author_name}</p>
+              {/* Display average rating here */}
+              <p className="text-yellow-600 font-semibold mb-1">
+                  ⭐ {book.average_rating != null && !isNaN(book.average_rating)
+                    ? Number(book.average_rating).toFixed(1)
+                    : '0.0'}
+
+                </p>
               <p className="text-blue-600 font-bold text-sm">৳{book.price}</p>
               <div className="text-xs mt-1 text-gray-700">In cart: {getQuantityInCart(book.book_id)}</div>
             </div>
