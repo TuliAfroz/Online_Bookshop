@@ -3,9 +3,16 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { getCustomerIdFromToken } from '../../utils/getCustomerId';
-import { Trash2 } from 'lucide-react';
+import { User, ShoppingCart,Trash2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 export default function CustomerCartPage() {
+
+  const router = useRouter();
+
+  const [customerName, setCustomerName] = useState('');
+  const [showDropdown, setShowDropdown] = useState(false);
+
   const [cartItems, setCartItems] = useState([]);
   const [subtotal, setSubtotal] = useState(0);
   const [orderPlaced, setOrderPlaced] = useState(false);
@@ -20,6 +27,22 @@ export default function CustomerCartPage() {
   const [finalTotalPayable, setFinalTotalPayable] = useState(0);
 
   const customerId = getCustomerIdFromToken();
+  
+
+  // Fetch customer name for header
+  useEffect(() => {
+    const customerId = getCustomerIdFromToken();
+    if (!customerId) return;
+
+    fetch(`http://localhost:3000/api/customers/${customerId}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data?.success && data.data) {
+          setCustomerName(data.data.customer_name);
+        }
+      })
+      .catch(console.error);
+  }, []);
 
   // Fetch giftcards
   useEffect(() => {
@@ -190,6 +213,74 @@ export default function CustomerCartPage() {
 
   return (
     <div className="min-h-screen bg-white-50">
+      {/* Header */}
+      <div className="flex justify-end items-center gap-4 px-6 pt-4">
+        <button
+          onClick={() => router.push('/customer/cart')}
+          className="text-gray-800 hover:text-blue-600 transition"
+        >
+          <ShoppingCart size={24} />
+        </button>
+        <div className="relative">
+          <button
+            onClick={() => setShowDropdown(!showDropdown)}
+            className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded-xl shadow hover:bg-gray-100 transition"
+          >
+            <User size={20} />
+            <span className="font-medium">{customerName || 'User'}</span>
+          </button>
+          {showDropdown && (
+            <div className="absolute right-0 mt-2 w-40 bg-white rounded shadow z-10 text-sm">
+              <button
+                className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                onClick={() => {
+                  setShowDropdown(false);
+                  router.push('/customer/dashboard');
+                }}
+              >
+                Home
+              </button>
+              <button
+                className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                onClick={() => {
+                  setShowDropdown(false);
+                  router.push('/customer/profile');
+                }}
+              >
+                My Profile
+              </button>
+              <button
+                className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                onClick={() => {
+                  setShowDropdown(false);
+                  router.push('/customer/reviews');
+                }}
+              >
+                Reviews
+              </button>
+              <button
+                className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                onClick={() => {
+                  setShowDropdown(false);
+                  router.push('/customer/orders');
+                }}
+              >
+                Orders
+              </button>
+              <button
+                className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                onClick={() => {
+                  setShowDropdown(false);
+                  handleLogout();
+                }}
+              >
+                Sign Out
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
       <div className="max-w-5xl mx-auto p-6">
         <h2 className="text-2xl font-bold mb-4">Your Cart</h2>
 

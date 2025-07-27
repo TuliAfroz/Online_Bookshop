@@ -41,7 +41,10 @@ export const getBookReviews = async (req, res) => {
   try {
     const { book_id } = req.params;
     const reviews = await db.query(
-      `SELECT * FROM review WHERE book_id = $1`,
+      `SELECT r.book_id, r.rating, r.description, c.customer_name
+      FROM review r
+      JOIN customer c ON r.customer_id = c.customer_id
+      WHERE r.book_id = $1`,
       [book_id]
     );
     res.json(reviews.rows);

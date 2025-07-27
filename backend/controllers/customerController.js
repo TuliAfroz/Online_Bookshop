@@ -8,7 +8,17 @@ export const getCustomerProfile = async (req, res) => {
 
   try {
     const result = await pool.query(
-      `SELECT customer_id, customer_name, phone_No, address, email FROM Customer WHERE Customer_ID = $1`,
+      `SELECT 
+          c.customer_id, 
+          c.customer_name, 
+          c.phone_no, 
+          c.address, 
+          c.email,
+          p.point_count,
+          p.level
+       FROM Customer c
+       LEFT JOIN point p ON c.customer_id = p.customer_id
+       WHERE c.customer_id = $1`,
       [id]
     );
 
@@ -48,13 +58,16 @@ export const changePassword = async (req, res) => {
 export const getAllCustomers = async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT 
-        Customer_ID AS customer_id, 
-        Customer_Name AS name, 
-        Email AS email,             
-        Phone_No AS phone,
-        Address AS address
-      FROM Customer
+    SELECT 
+      c.Customer_ID AS customer_id, 
+      c.Customer_Name AS name, 
+      c.Email AS email,             
+      c.Phone_No AS phone,
+      c.Address AS address,
+      p.point_count,
+      p.level
+    FROM Customer c
+    LEFT JOIN point p ON c.Customer_ID = p.customer_id
     `);
     res.status(200).json({ success: true, data: result.rows });
   } catch (error) {

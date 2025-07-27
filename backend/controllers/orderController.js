@@ -147,3 +147,37 @@ export const getOrderDetails = async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+
+export const getOrdersByCustomer = async (req, res) => {
+  const { customer_id } = req.params;
+
+  try {
+    const result = await pool.query(
+      `SELECT 
+         o.order_id,
+         o.subtotal_price,
+         o.discount,
+         o.total_price,
+         json_agg(
+           json_build_object(
+             'book_id', b.book_id,
+             'title', b.title,
+             'quantity', ci.quantity,
+             'price', b.price
+           )
+         ) AS books
+       FROM orders o
+       JOIN cartitem ci ON o.cart_id = ci.cart_id
+       JOIN book b ON ci.book_id = b.book_id
+       WHERE o.customer_id = $1
+       GROUP BY o.order_id, o.subtotal_price, o.discount, o.total_price
+       ORDER BY o.date DESC`,
+      [customer_id]
+    );
+
+    res.status(200).json({ success: true, orders: result.rows });
+  } catch (error) {
+    console.error('❌ Error fetching orders for customer:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};

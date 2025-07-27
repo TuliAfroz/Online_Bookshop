@@ -114,10 +114,13 @@ export default function CustomerDashboard() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-blue-50">
       {/* Header */}
       <div className="flex justify-end items-center gap-4 px-6 pt-4">
-        <button onClick={() => router.push('/customer/cart')} className="text-gray-800 hover:text-blue-600 transition">
+        <button
+          onClick={() => router.push('/customer/cart')}
+          className="text-gray-800 hover:text-blue-600 transition"
+        >
           <ShoppingCart size={24} />
         </button>
         <div className="relative">
@@ -126,33 +129,60 @@ export default function CustomerDashboard() {
             className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded-xl shadow hover:bg-gray-100 transition"
           >
             <User size={20} />
-            <span className="font-medium">{customerName}</span>
+            <span className="font-medium">{customerName || 'User'}</span>
           </button>
           {showDropdown && (
             <div className="absolute right-0 mt-2 w-40 bg-white rounded shadow z-10 text-sm">
               <button
                 className="block w-full text-left px-4 py-2 hover:bg-gray-100"
-                onClick={() => router.push('/customer/profile')}
+                onClick={() => {
+                  setShowDropdown(false);
+                  router.push('/customer/dashboard');
+                }}
+              >
+                Home
+              </button>
+              <button
+                className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                onClick={() => {
+                  setShowDropdown(false);
+                  router.push('/customer/profile');
+                }}
               >
                 My Profile
               </button>
               <button
                 className="block w-full text-left px-4 py-2 hover:bg-gray-100"
-                onClick={() => router.push('/customer/reviews')}
+                onClick={() => {
+                  setShowDropdown(false);
+                  router.push('/customer/reviews');
+                }}
               >
                 Reviews
               </button>
               <button
                 className="block w-full text-left px-4 py-2 hover:bg-gray-100"
-                onClick={handleLogout}
+                onClick={() => {
+                  setShowDropdown(false);
+                  router.push('/customer/orders');
+                }}
+              >
+                Orders
+              </button>
+              <button
+                className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                onClick={() => {
+                  setShowDropdown(false);
+                  handleLogout();
+                }}
               >
                 Sign Out
               </button>
             </div>
           )}
-
         </div>
       </div>
+
 
       {/* Search */}
       <div className="flex justify-center p-4">

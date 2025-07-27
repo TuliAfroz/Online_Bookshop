@@ -152,20 +152,22 @@ export const createBook = async (req, res) => {
 
 
 
-
 export const getBook = async (req, res) => {
   const { book_id } = req.params;
   try {
+    // 1. Get book info + author + categories + inventory quantity + average rating
     const result = await pool.query(
       `
       SELECT b.*, a.author_name, 
         COALESCE(i.quantity, 0) as quantity,
-        ARRAY_AGG(c.category_name) AS categories
+        ARRAY_AGG(DISTINCT c.category_name) AS categories,
+        COALESCE(AVG(r.rating), 0) AS average_rating
       FROM Book b
       LEFT JOIN Author a ON b.author_id = a.author_id
       LEFT JOIN Inventory i ON b.book_id = i.book_id
       LEFT JOIN BookCategory bc ON b.book_id = bc.book_id
       LEFT JOIN Category c ON bc.category_id = c.category_id
+      LEFT JOIN Review r ON b.book_id = r.book_id
       WHERE b.book_id = $1
       GROUP BY b.book_id, a.author_name, i.quantity
       `,
@@ -176,7 +178,26 @@ export const getBook = async (req, res) => {
       return res.status(404).json({ error: 'Book not found' });
     }
 
-    res.status(200).json({ success: true, data: result.rows[0] });
+    const book = result.rows[0];
+
+    // 2. Get all reviews with customer name for this book
+    const reviewsResult = await pool.query(
+      `
+      SELECT r.rating, r.description, c.customer_name
+      FROM Review r
+      JOIN Customer c ON r.customer_id = c.customer_id
+      WHERE r.book_id = $1
+      `,
+      [book_id]
+    );
+
+    res.status(200).json({ 
+      success: true, 
+      data: {
+        ...book,
+        reviews: reviewsResult.rows
+      }
+    });
   } catch (error) {
     console.error('Error fetching book details:', error);
     res.status(500).json({ error: 'Internal Server Error' });

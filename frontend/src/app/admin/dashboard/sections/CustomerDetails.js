@@ -12,6 +12,8 @@ export default function CustomerDetails({ customer, onBack }) {
 
       <h2 className="text-2xl font-bold mb-4 text-center">Customer Details</h2>
       <p><strong>Name:</strong> {customer.name}</p>
+      <p><strong>Points:</strong> {customer.point_count ?? 0}</p>
+      <p><strong>Level:</strong> {customer.level ?? 'N/A'}</p>
       <p><strong>Email:</strong> {customer.email}</p>
       <p><strong>Phone:</strong> {customer.phone || 'N/A'}</p>
       <p><strong>Address:</strong> {customer.address || 'N/A'}</p>

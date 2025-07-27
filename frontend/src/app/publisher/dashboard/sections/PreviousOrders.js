@@ -47,7 +47,7 @@ export default function PreviousOrders() {
           <ul className="text-sm mb-2 space-y-1">
             {order.items.map((item, idx) => (
               <li key={idx}>
-                📕 {item.title} × {item.quantity} @ ৳{item.price_per_unit}
+                📕 {item.title} × {item.quantity} × ৳{item.price_per_unit}
               </li>
             ))}
           </ul>

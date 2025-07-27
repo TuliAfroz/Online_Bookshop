@@ -1,9 +1,17 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { User, ShoppingCart } from 'lucide-react';
 import { getCustomerIdFromToken } from '../../utils/getCustomerId';
 
 export default function CustomerReviews() {
+
+    const router = useRouter();
+
+    const [customerName, setCustomerName] = useState('');
+    const [showDropdown, setShowDropdown] = useState(false);
+
     const [reviews, setReviews] = useState([]);
     const [books, setBooks] = useState([]);
     const [selectedBook, setSelectedBook] = useState('');
@@ -13,6 +21,21 @@ export default function CustomerReviews() {
     const [editingReview, setEditingReview] = useState(null);
 
     const customerId = getCustomerIdFromToken();
+
+    // Fetch customer name for header
+    useEffect(() => {
+        const customerId = getCustomerIdFromToken();
+        if (!customerId) return;
+
+        fetch(`http://localhost:3000/api/customers/${customerId}`)
+        .then(res => res.json())
+        .then(data => {
+            if (data?.success && data.data) {
+            setCustomerName(data.data.customer_name);
+            }
+        })
+        .catch(console.error);
+    }, []);
 
     useEffect(() => {
         if (!customerId) return;
@@ -109,7 +132,75 @@ export default function CustomerReviews() {
     };
 
     return (
-        <div className="min-h-screen bg-blue-50 py-10 px-4">
+        <div className="min-h-screen bg-blue-50 ">
+        {/* Header */}
+        <div className="flex justify-end items-center gap-4 px-6 pt-4 pb-4 ">
+            <button
+            onClick={() => router.push('/customer/cart')}
+            className="text-gray-800 hover:text-blue-600 transition"
+            >
+            <ShoppingCart size={24} />
+            </button>
+            <div className="relative">
+            <button
+                onClick={() => setShowDropdown(!showDropdown)}
+                className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded-xl shadow hover:bg-gray-100 transition"
+            >
+                <User size={20} />
+                <span className="font-medium">{customerName || 'User'}</span>
+            </button>
+            {showDropdown && (
+                <div className="absolute right-0 mt-2 w-40 bg-white rounded shadow z-10 text-sm">
+                <button
+                    className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                    onClick={() => {
+                    setShowDropdown(false);
+                    router.push('/customer/dashboard');
+                    }}
+                >
+                    Home
+                </button>
+                <button
+                    className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                    onClick={() => {
+                    setShowDropdown(false);
+                    router.push('/customer/profile');
+                    }}
+                >
+                    My Profile
+                </button>
+                <button
+                    className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                    onClick={() => {
+                    setShowDropdown(false);
+                    router.push('/customer/reviews');
+                    }}
+                >
+                    Reviews
+                </button>
+                <button
+                    className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                    onClick={() => {
+                    setShowDropdown(false);
+                    router.push('/customer/orders');
+                    }}
+                >
+                    Orders
+                </button>
+                <button
+                    className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                    onClick={() => {
+                    setShowDropdown(false);
+                    handleLogout();
+                    }}
+                >
+                    Sign Out
+                </button>
+                </div>
+            )}
+            </div>
+        </div>
+
             <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Left Column - My Reviews */}
                 <div className="bg-white shadow-md rounded-xl p-6">
