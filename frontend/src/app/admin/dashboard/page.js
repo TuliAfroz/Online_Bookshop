@@ -11,8 +11,8 @@ import InventoryList from './sections/InventoryList';
 import AuthorList from './sections/AuthorList';
 import CustomerList from './sections/CustomerList';
 import CustomerDetails from './sections/CustomerDetails';
-import BuyBooks from './sections/BuyBooks'; // Uncomment if needed
-
+import BuyBooks from './sections/BuyBooks';
+import PreviousOrders from './sections/PreviousOrders';
 const tabs = [
   { key: 'search', label: 'Books' },
   { key: 'view-customers', label: 'Customers' },
@@ -22,6 +22,7 @@ const tabs = [
   { key: 'inventory', label: 'Inventory' },
   { key: 'add-publisher', label: 'Add Publisher' },
   { key: 'buy-books', label: 'Buy Books' },
+  { key: 'previous-orders', label: 'Previous Orders' },
   { key: 'logout', label: 'Logout' },
 ];
 
@@ -78,6 +79,7 @@ export default function AdminDashboard() {
           {activeTab === 'add-publisher' && <AddPublisherForm />}
           {activeTab === 'publishers' && <PublisherList />}
           {activeTab === 'buy-books' && <BuyBooks />}
+          {activeTab === 'previous-orders' && <PreviousOrders />}
           {activeTab === 'categories' && <CategoryList />}
           {activeTab === 'view-authors' && <AuthorList />}
           {activeTab === 'view-customers' && (

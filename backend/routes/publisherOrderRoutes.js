@@ -3,14 +3,24 @@ import {
     placePublisherOrder,
     confirmPublisherOrder,
     cancelPublisherOrder,
-    makePublisherPayment
+    makePublisherPayment,
+    getPublisherOrderStatus,
+    getPendingOrdersForPublisher,
+    getPreviousOrdersForPublisher,
+    getAllPreviousPublisherOrders
 } from '../controllers/publisherOrderController.js';
 
 const router = express.Router();
 
 router.post('/place', placePublisherOrder);
 router.put('/confirm/:publisher_order_id', confirmPublisherOrder);
-router.put('/cancel/:publisher_order_id', cancelPublisherOrder);
+router.delete('/cancel/:publisher_order_id', cancelPublisherOrder);
 router.post('/payment', makePublisherPayment);
+router.get('/:orderId/status', getPublisherOrderStatus);
+router.get('/pending/:publisher_id', getPendingOrdersForPublisher);
+router.get('/previous/:publisher_id', getPreviousOrdersForPublisher);
+router.get('/admin/previous-orders', getAllPreviousPublisherOrders);
+
+
 
 export default router;

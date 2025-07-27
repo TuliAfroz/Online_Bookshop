@@ -7,273 +7,274 @@ export default function BuyBooks() {
   const [publishers, setPublishers] = useState([]);
   const [selectedPublisher, setSelectedPublisher] = useState(null);
   const [books, setBooks] = useState([]);
-  const [selectedBooks, setSelectedBooks] = useState({}); // book_id => { quantity, price_per_unit }
-  const [adminBalance, setAdminBalance] = useState(0);
-  const [totalPrice, setTotalPrice] = useState(0);
-  const [orderPlaced, setOrderPlaced] = useState(false);
+  const [quantities, setQuantities] = useState({});
+  const [subtotal, setSubtotal] = useState(0);
   const [orderId, setOrderId] = useState(null);
+  const [orderStatus, setOrderStatus] = useState('');
+  const [transactionId, setTransactionId] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('');
+  const adminId = 101;
 
-  // Always admin 101 for balance, but any admin can buy
-  const ADMIN_ID = 101;
+  const [adminBalance, setAdminBalance] = useState(0);
 
-  // Fetch all publishers on mount
-  axios.get('/api/publishers')
-  .then(res => setPublishers(res.data.publishers)) // or whatever your actual key is
-  .catch(err => {
-    console.error('Failed to fetch publishers:', err);
-    setPublishers([]); // set empty array to avoid map error
-  });
-
-
-  // Fetch admin balance (admin 101) on mount
+  // Fetch publishers
   useEffect(() => {
-    axios.get(`http://localhost:3000/api/admin/${ADMIN_ID}/balance`)
-      .then(res => setAdminBalance(res.data.balance))
-      .catch(err => {
-        console.error('Error fetching admin balance:', err);
-        setAdminBalance(0);
-      });
+    const fetchPublishers = async () => {
+      try {
+        const res = await fetch('http://localhost:3000/api/publishers');
+        const data = await res.json();
+        if (Array.isArray(data.data)) {
+          setPublishers(data.data);
+        } else {
+          console.error('Invalid publisher response format:', data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch publishers:', error);
+      }
+    };
+    fetchPublishers();
   }, []);
 
-  // Fetch books when publisher selected
+  // Fetch books
   useEffect(() => {
-    if (!selectedPublisher) {
-      setBooks([]);
-      setSelectedBooks({});
-      setTotalPrice(0);
-      return;
-    }
-
+    if (!selectedPublisher) return;
     axios.get(`http://localhost:3000/api/books/publisher/${selectedPublisher}`)
       .then(res => {
-        setBooks(res.data);
-        setSelectedBooks({});
-        setTotalPrice(0);
+        const bookList = res.data.data || [];
+        setBooks(bookList);
+        setQuantities({});
       })
-      .catch(err => {
-        console.error('Error fetching publisher books:', err);
-        setBooks([]);
-        setSelectedBooks({});
-        setTotalPrice(0);
-      });
+      .catch(err => console.error(err));
   }, [selectedPublisher]);
 
-  // Update total price when selectedBooks change
+  // Subtotal calculation
   useEffect(() => {
-    let total = 0;
-    for (const bookId in selectedBooks) {
-      const { quantity, price_per_unit } = selectedBooks[bookId];
-      total += quantity * price_per_unit;
+    let sum = 0;
+    for (const book of books) {
+      const q = quantities[book.book_id] || 0;
+      sum += q * book.price;
     }
-    setTotalPrice(total);
-  }, [selectedBooks]);
+    setSubtotal(sum);
+  }, [quantities, books]);
 
-  // Handle checkbox toggle
-  const toggleSelectBook = (book) => {
-    setSelectedBooks(prev => {
-      if (prev[book.book_id]) {
-        // Deselect => remove
-        const copy = { ...prev };
-        delete copy[book.book_id];
-        return copy;
-      } else {
-        // Select with quantity 1 by default
-        // Only add if total price + book.price_per_unit <= adminBalance
-        if (totalPrice + book.price_per_unit > adminBalance) {
-          alert("Cannot select books exceeding admin balance!");
-          return prev;
+    // Polling for order status
+  useEffect(() => {
+    if (!orderId) return;
+  
+    const interval = setInterval(async () => {
+      try {
+
+        if (!orderId || orderId === 'null') return;
+
+        const res = await axios.get(`http://localhost:3000/api/publisher-orders/${orderId}/status`);
+        const status = res.data.status;
+  
+        setOrderStatus(status);
+  
+        if (status === 'confirmed') {
+          clearInterval(interval); // Stop polling once confirmed
         }
-        return {
-          ...prev,
-          [book.book_id]: { quantity: 1, price_per_unit: book.price },
-        };
+      } catch (err) {
+        console.error('Failed to fetch order status:', err);
       }
+    }, 3000); // poll every 3 seconds
+  
+    return () => clearInterval(interval); // cleanup on unmount or orderId change
+  }, [orderId]);
+  
+
+  // Admin balance (from admin 101)
+  useEffect(() => {
+    axios.get(`http://localhost:3000/api/admin/101/balance`)
+      .then(res => setAdminBalance(res.data.balance || 0))
+      .catch(err => console.error(err));
+  }, []);
+
+  const updateQuantity = (bookId, delta) => {
+    setQuantities(prev => {
+      const newQty = Math.max(0, (prev[bookId] || 0) + delta);
+      return { ...prev, [bookId]: newQty };
     });
   };
 
-  // Increase quantity of selected book (if within balance)
-  const increaseQuantity = (bookId) => {
-    setSelectedBooks(prev => {
-      const current = prev[bookId];
-      if (!current) return prev; // safety
-
-      // Calculate new total if we add one more
-      const newTotal = totalPrice + current.price_per_unit;
-      if (newTotal > adminBalance) {
-        alert("Cannot exceed admin balance!");
-        return prev;
-      }
-
-      return {
-        ...prev,
-        [bookId]: { ...current, quantity: current.quantity + 1 },
-      };
-    });
-  };
-
-  // Decrease quantity of selected book (min 1)
-  const decreaseQuantity = (bookId) => {
-    setSelectedBooks(prev => {
-      const current = prev[bookId];
-      if (!current) return prev;
-
-      if (current.quantity === 1) {
-        // If quantity hits 0, deselect book
-        const copy = { ...prev };
-        delete copy[bookId];
-        return copy;
-      }
-
-      return {
-        ...prev,
-        [bookId]: { ...current, quantity: current.quantity - 1 },
-      };
-    });
-  };
-
-  // Place Order button handler
   const handlePlaceOrder = async () => {
-    if (!selectedPublisher) {
-      alert("Please select a publisher.");
-      return;
+    const orderedBooks = books
+      .filter(book => (quantities[book.book_id] || 0) > 0)
+      .map(book => ({
+        book_id: book.book_id,
+        quantity: quantities[book.book_id],
+        price_per_unit: book.price,
+      }));
+
+    if (orderedBooks.length === 0) return alert('Select at least one book.');
+
+    try {
+      const res = await axios.post('http://localhost:3000/api/publisher-orders/place', {
+        admin_id: adminId,
+        publisher_id: selectedPublisher,
+        books: orderedBooks,
+      });
+
+      alert('✅ Order placed!');
+      setOrderId(res.data.publisher_order_id);
+      setOrderStatus('pending');
+    } catch (err) {
+      console.error(err);
+      alert('❌ Failed to place order.');
     }
+  };
 
-    const booksToOrder = Object.entries(selectedBooks).map(([book_id, { quantity, price_per_unit }]) => ({
-      book_id,
-      quantity,
-      price_per_unit,
-    }));
+  const handleCancelOrder = async () => {
+    if (!orderId) return;
+    await axios.delete(`http://localhost:3000/api/publisher-orders/cancel/${orderId}`);
+    alert('🛑 Order cancelled');
+    setOrderId(null);
+    setOrderStatus('');
+  };
 
-    if (booksToOrder.length === 0) {
-      alert("Select at least one book.");
+  const handlePayment = async () => {
+    if (!transactionId || !paymentMethod) {
+      alert('Enter transaction ID and select payment method.');
       return;
     }
 
     try {
-      const res = await axios.post('http://localhost:3000/api/publisher-orders/place', {
-        admin_id: ADMIN_ID,
-        publisher_id: selectedPublisher,
-        books: booksToOrder,
+      await axios.post(`http://localhost:3000/api/publisher-orders/payment`, {
+        publisher_order_id: orderId,
+        transaction_id: transactionId,
+        method: paymentMethod,
       });
 
-      alert("Order placed! Waiting for publisher confirmation.");
-      setOrderPlaced(true);
-      setOrderId(res.data.publisher_order_id);
-
-      // Reset selection (optional)
-      setSelectedBooks({});
-      setTotalPrice(0);
-    } catch (error) {
-      console.error('Error placing order:', error);
-      alert('Failed to place order.');
+      alert('✅ Payment successful and inventory updated');
+      setOrderId(null);
+      setOrderStatus('');
+      setQuantities({});
+    } catch (err) {
+      console.error(err);
+      alert('❌ Payment failed');
     }
   };
 
+  const discount = subtotal * 0.05;
+  const total = subtotal - discount;
+
   return (
-    <div className="max-w-5xl mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-6">Buy Books</h1>
+    <div className="max-w-6xl mx-auto p-6">
+      <h2 className="text-2xl font-bold mb-4 text-center">Buy Books</h2>
 
-      <div className="mb-6">
-        <label htmlFor="publisher-select" className="block mb-2 font-semibold">
-          Select Publisher:
-        </label>
-        <select
-          id="publisher-select"
-          className="p-2 border rounded w-full max-w-sm"
-          value={selectedPublisher || ''}
-          onChange={(e) => setSelectedPublisher(e.target.value || null)}
-        >
-          <option value="">-- Choose a publisher --</option>
-          {publishers.map((p) => (
-            <option key={p.publisher_id} value={p.publisher_id}>
-              {p.publisher_name}
-            </option>
-          ))}
-        </select>
-      </div>
+      <select
+        className="border rounded p-2 w-full mb-6"
+        onChange={(e) => setSelectedPublisher(e.target.value)}
+      >
+        <option value="">Select Publisher</option>
+        {publishers.map(p => (
+          <option key={p.publisher_id} value={p.publisher_id}>{p.publisher_name}</option>
+        ))}
+      </select>
 
-      <div className="mb-4 font-semibold">Admin Balance: ৳{adminBalance.toFixed(2)}</div>
-
-      {books.length > 0 ? (
-        <div className="space-y-3 border rounded p-4 max-w-3xl">
-          {books.map((book) => {
-            const isSelected = selectedBooks.hasOwnProperty(book.book_id);
-            const quantity = isSelected ? selectedBooks[book.book_id].quantity : 0;
-
-            return (
+      {books.length > 0 && (
+        <>
+          <div className="space-y-4">
+            {books.map(book => (
               <div
                 key={book.book_id}
-                className="flex items-center gap-4 border-b last:border-none pb-2"
+                className="flex items-center gap-4 bg-white shadow p-4 rounded"
               >
-                <input
-                  type="checkbox"
-                  checked={isSelected}
-                  onChange={() => toggleSelectBook(book)}
-                  className="w-5 h-5"
-                />
-                {book.cover_image_url && (
-                  <img
-                    src={book.cover_image_url}
-                    alt={book.title}
-                    className="w-16 h-24 object-cover rounded"
-                  />
-                )}
+                <img src={book.cover_image_url} alt={book.title} className="w-20 h-28 object-cover rounded" />
                 <div className="flex-1">
-                  <div className="font-semibold">{book.title}</div>
-                  <div className="text-sm text-gray-600">Price: ৳{book.price.toFixed(2)}</div>
+                  <h3 className="font-bold text-lg">{book.title}</h3>
+                  <p className="text-sm text-gray-600">৳{book.price}</p>
                 </div>
 
-                {/* Quantity controls */}
-                {isSelected && (
-                  <div className="flex items-center gap-1 border rounded overflow-hidden select-none">
+                <div className="flex items-center border rounded">
+                  <button onClick={() => updateQuantity(book.book_id, -1)} className="px-3 py-2 bg-gray-100">–</button>
+                  <span className="px-4">{quantities[book.book_id] || 0}</span>
+                  <button onClick={() => updateQuantity(book.book_id, 1)} className="px-3 py-2 bg-gray-100">+</button>
+                </div>
+
+                <div className="text-right text-sm font-semibold ml-6">
+                  ৳{(quantities[book.book_id] || 0) * book.price}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="text-right mt-6 text-lg">
+            <div>
+              <span className="font-semibold">Subtotal:</span>{' '}
+              <span className="font-normal"> ৳{subtotal.toFixed(2)}</span>
+            </div>
+            <div>
+              <span className="font-semibold">Discount (5%):</span>{' '}
+              <span className="font-normal"> -৳{discount.toFixed(2)}</span>
+            </div>
+            <div className="text-xl">
+              <span className="font-bold">Total:</span>{' '}
+              <span className="font-normal"> ৳{total.toFixed(2)}</span>
+            </div>
+          </div>
+
+          {orderId ? (
+            <div className="mt-6 space-y-4 border-t pt-4">
+              <h3 className="font-semibold text-lg">Order ID: {orderId}</h3>
+
+              {orderStatus === 'pending' && (
+                <div className="text-yellow-600 font-medium">
+                  🔄 Your order is <strong>pending</strong>. Please wait for publisher confirmation.
+                </div>
+              )}
+
+              {orderStatus === 'confirmed' && (
+                <>
+                  <input
+                    type="text"
+                    className="border rounded p-2 w-full"
+                    placeholder="Transaction ID"
+                    value={transactionId}
+                    onChange={(e) => setTransactionId(e.target.value)}
+                  />
+
+                  <select
+                    className="border rounded p-2 w-full"
+                    value={paymentMethod}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                  >
+                    <option value="">Select Payment Method</option>
+                    <option value="Bkash">Bkash</option>
+                    <option value="Nagad">Nagad</option>
+                    <option value="Rocket">Rocket</option>
+                  </select>
+
+                  <div className="flex justify-end gap-2 mt-4">
                     <button
-                      onClick={() => decreaseQuantity(book.book_id)}
-                      className="px-3 py-1 bg-gray-200 hover:bg-gray-300"
-                      type="button"
+                      onClick={handleCancelOrder}
+                      className="bg-slate-600 text-white px-4 py-2 rounded hover:bg-slate-500"
                     >
-                      –
+                      Cancel Order
                     </button>
-                    <span className="px-3">{quantity}</span>
                     <button
-                      onClick={() => increaseQuantity(book.book_id)}
-                      className="px-3 py-1 bg-gray-200 hover:bg-gray-300"
-                      type="button"
+                      onClick={handlePayment}
+                      className="bg-slate-600 text-white px-4 py-2 rounded hover:bg-slate-500"
                     >
-                      +
+                      Make Payment
                     </button>
                   </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      ) : selectedPublisher ? (
-        <p>No books found for this publisher.</p>
-      ) : null}
 
-      <div className="mt-6 text-right font-bold text-xl">
-        Total Price: <span className="text-green-700">৳{totalPrice.toFixed(2)}</span>
-      </div>
-
-      <div className="mt-4 text-right">
-        <button
-          disabled={totalPrice === 0}
-          onClick={handlePlaceOrder}
-          className={`px-6 py-2 rounded text-white ${
-            totalPrice === 0 ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-700 hover:bg-blue-600'
-          }`}
-        >
-          Place Order
-        </button>
-      </div>
-
-      {orderPlaced && (
-        <div className="mt-8 p-4 border rounded bg-yellow-50 text-yellow-800 font-semibold">
-          Order placed successfully! Waiting for publisher confirmation.
-          <br />
-          Order ID: {orderId}
-        </div>
+                </>
+              )}
+            </div>
+          ) : (
+            <button
+              onClick={handlePlaceOrder}
+              className="mt-6 bg-slate-600 text-white px-4 py-2 py-2 rounded hover:bg-slate-500 mx-auto block"
+            >
+              Place Order
+            </button>
+          )}
+        </>
       )}
     </div>
   );
 }
+
+// in this page, keep 2 columns. one for pending books and the other for buying books. once a books order is placed and it is in pending state, it will be added to the left column(pending orders). and then the buy book column will be cleared. once an order is confirmed, the futher payment and other functionalities will be done in the left column ....now give me a fresh, correct code like you just did

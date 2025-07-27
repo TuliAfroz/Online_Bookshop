@@ -354,6 +354,13 @@ export const getBooksByPublisher = async (req, res) => {
     const { publisherId } = req.params;
     const { query } = req.query;
 
+    const publisherIdNum = parseInt(publisherId, 10);
+    if (isNaN(publisherIdNum)) {
+      return res.status(400).json({ error: 'Invalid publisherId' });
+    }
+
+    console.log('Fetching books for publisherId:', publisherIdNum, 'with search query:', query);
+
     let sql = `
       SELECT 
         b.book_id,
@@ -370,7 +377,7 @@ export const getBooksByPublisher = async (req, res) => {
       WHERE b.publisher_id = $1
     `;
 
-    let params = [publisherId];
+    let params = [publisherIdNum];
 
     if (query) {
       sql += `
@@ -390,12 +397,15 @@ export const getBooksByPublisher = async (req, res) => {
 
     const result = await pool.query(sql, params);
 
+    console.log('Books found:', result.rows.length);
+
     res.status(200).json({ success: true, data: result.rows });
   } catch (error) {
     console.error('Error fetching books by publisher:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+
 
 
 export const getBooksInStock = async (req, res) => {

@@ -5,9 +5,14 @@ import pool from '../config/db.js';
 export const placePublisherOrder = async (req, res) => {
   const client = await pool.connect();
   try {
+    console.log('Received order data:', req.body);
+
     const { admin_id, publisher_id, books } = req.body;
 
-    // Generate unique integer IDs by parsing uuid strings (as you prefer)
+    if (!admin_id || !publisher_id || !Array.isArray(books) || books.length === 0) {
+      return res.status(400).json({ message: 'Missing or invalid order data' });
+    }
+
     let publisher_order_id;
     do {
       publisher_order_id = parseInt(uuidv4().replace(/\D/g, '').slice(0, 8));
@@ -18,12 +23,27 @@ export const placePublisherOrder = async (req, res) => {
 
     await client.query('BEGIN');
 
-    // Calculate total amount from books
+    // Validate books and calculate total amount
     for (const book of books) {
+      if (!book.book_id || !book.quantity || !book.price_per_unit) {
+        throw new Error('Invalid book data');
+      }
       total_amount += book.quantity * book.price_per_unit;
     }
 
-    // Insert publisher_order (trigger will apply discount and validate balance)
+    // Check admin 101 balance before placing order
+    const balanceResult = await client.query(
+      `SELECT balance FROM admin WHERE admin_id = 101`
+    );
+    if (balanceResult.rowCount === 0) {
+      throw new Error('Admin 101 not found.');
+    }
+    const admin101Balance = parseFloat(balanceResult.rows[0].balance);
+    if (total_amount > admin101Balance) {
+      throw new Error('Not enough balance in admin 101 account.');
+    }
+
+    // Insert publisher_order
     await client.query(
       `INSERT INTO publisher_order (
         publisher_order_id, admin_id, publisher_id, order_date, total_amount, status
@@ -31,7 +51,7 @@ export const placePublisherOrder = async (req, res) => {
       [publisher_order_id, admin_id, publisher_id, order_date, total_amount, 'pending']
     );
 
-    // Insert each publisher_order_item
+    // Insert order items
     for (const book of books) {
       let publisher_order_item_id;
       do {
@@ -57,6 +77,7 @@ export const placePublisherOrder = async (req, res) => {
     client.release();
   }
 };
+
 
 // Confirm order by publisher
 export const confirmPublisherOrder = async (req, res) => {
@@ -151,3 +172,151 @@ export const makePublisherPayment = async (req, res) => {
     client.release();
   }
 };
+// Get order status
+export const getPublisherOrderStatus = async (req, res) => {
+  const { orderId } = req.params;
+
+  try {
+    const result = await pool.query(
+      `SELECT status FROM publisher_order WHERE publisher_order_id = $1`,
+      [orderId]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    res.status(200).json({ status: result.rows[0].status });
+  } catch (err) {
+    console.error('Error fetching order status:', err);
+    res.status(500).json({ message: 'Error fetching order status' });
+  }
+};
+
+// Get pending orders for a publisher
+export const getPendingOrdersForPublisher = async (req, res) => {
+  const { publisher_id } = req.params;
+
+  try {
+    const result = await pool.query(
+      `SELECT po.publisher_order_id, po.total_amount, poi.quantity, poi.price_per_unit,
+              b.title
+       FROM publisher_order po
+       JOIN publisher_order_item poi ON po.publisher_order_id = poi.publisher_order_id
+       JOIN book b ON poi.book_id = b.book_id
+       WHERE po.publisher_id = $1 AND po.status = 'pending'
+       ORDER BY po.publisher_order_id DESC`,
+      [publisher_id]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(200).json({ orders: [] });
+    }
+
+    // Group rows by publisher_order_id
+    const grouped = {};
+    for (const row of result.rows) {
+      if (!grouped[row.publisher_order_id]) {
+        grouped[row.publisher_order_id] = {
+          publisher_order_id: row.publisher_order_id,
+          total_amount: row.total_amount,
+          items: [],
+        };
+      }
+      grouped[row.publisher_order_id].items.push({
+        title: row.title,
+        quantity: row.quantity,
+        price_per_unit: row.price_per_unit,
+      });
+    }
+
+    res.status(200).json({ orders: Object.values(grouped) });
+  } catch (err) {
+    console.error('Error fetching pending orders:', err);
+    res.status(500).json({ message: 'Error fetching pending orders' });
+  }
+};
+
+// Get previous (confirmed or cancelled) orders for a publisher
+export const getPreviousOrdersForPublisher = async (req, res) => {
+  const { publisher_id } = req.params;
+
+  try {
+    const result = await pool.query(
+      `SELECT po.publisher_order_id, po.total_amount, poi.quantity, poi.price_per_unit, b.title
+       FROM publisher_order po
+       JOIN publisher_order_item poi ON po.publisher_order_id = poi.publisher_order_id
+       JOIN book b ON poi.book_id = b.book_id
+       WHERE po.publisher_id = $1 AND po.status IN ('confirmed', 'cancelled')
+       ORDER BY po.publisher_order_id DESC`,
+      [publisher_id]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(200).json({ orders: [] });
+    }
+
+    const grouped = {};
+    for (const row of result.rows) {
+      if (!grouped[row.publisher_order_id]) {
+        grouped[row.publisher_order_id] = {
+          publisher_order_id: row.publisher_order_id,
+          total_amount: row.total_amount,
+          items: [],
+        };
+      }
+      grouped[row.publisher_order_id].items.push({
+        title: row.title,
+        quantity: row.quantity,
+        price_per_unit: row.price_per_unit,
+      });
+    }
+
+    res.status(200).json({ orders: Object.values(grouped) });
+  } catch (err) {
+    console.error('Error fetching previous orders:', err);
+    res.status(500).json({ message: 'Error fetching previous orders' });
+  }
+};
+
+// Get all previous publisher orders (admin view)
+export const getAllPreviousPublisherOrders = async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT po.publisher_order_id, po.total_amount, po.status,
+             p.publisher_name, p.publisher_img_url,
+             poi.quantity, poi.price_per_unit, b.title
+      FROM publisher_order po
+      JOIN publisher_order_item poi ON po.publisher_order_id = poi.publisher_order_id
+      JOIN book b ON poi.book_id = b.book_id
+      JOIN publisher p ON po.publisher_id = p.publisher_id
+      WHERE po.status IN ('confirmed', 'cancelled')
+      ORDER BY po.publisher_order_id DESC
+    `);
+
+    const grouped = {};
+    for (const row of result.rows) {
+      if (!grouped[row.publisher_order_id]) {
+        grouped[row.publisher_order_id] = {
+          publisher_order_id: row.publisher_order_id,
+          publisher_name: row.publisher_name,
+          publisher_img_url: row.publisher_img_url,
+          total_amount: row.total_amount,
+          status: row.status,
+          items: [],
+        };
+      }
+      grouped[row.publisher_order_id].items.push({
+        title: row.title,
+        quantity: row.quantity,
+        price_per_unit: row.price_per_unit,
+      });
+    }
+
+    res.status(200).json({ orders: Object.values(grouped) });
+  } catch (err) {
+    console.error('Error fetching admin previous orders:', err);
+    res.status(500).json({ message: 'Failed to fetch previous orders' });
+  }
+};
+

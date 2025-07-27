@@ -5,7 +5,8 @@ import { Menu } from 'lucide-react';
 
 import AddBookForm from './sections/AddBookForm';
 import AddAuthorForm from './sections/AddAuthorForm';
-import PublisherOrderList from './sections/PublisherOrderList';
+import PendingOrders from './sections/PendingOrders';
+import PreviousOrders from './sections/PreviousOrders';
 import PublisherProfile from './sections/PublisherProfile';
 import EditBookPrices from './sections/EditBookPrices';
 import SearchOwnBooks from './sections/SearchOwnBooks';
@@ -84,8 +85,8 @@ export default function PublisherDashboard() {
           {activeTab === 'search' && <SearchOwnBooks publisherId={publisherId} />}
           {activeTab === 'add-book' && <AddBookForm publisherId={publisherId} />}
           {activeTab === 'add-author' && <AddAuthorForm />}
-          {activeTab === 'pending-orders' && <PublisherOrderList status="pending" publisherId={publisherId} />}
-          {activeTab === 'previous-orders' && <PublisherOrderList status="completed" publisherId={publisherId} />}
+          {activeTab === 'pending-orders' && <PendingOrders publisherId={publisherId} />}
+          {activeTab === 'previous-orders' && <PreviousOrders publisherId={publisherId} />}
           {activeTab === 'edit-price' && <EditBookPrices publisherId={publisherId} />}
           {activeTab === 'profile' && <PublisherProfile publisherId={publisherId} />}
         </div>
