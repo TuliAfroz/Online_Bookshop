@@ -45,7 +45,7 @@ export default function PublisherLoginPage() {
       if (!res.ok) {
         setError(data.error || 'Login failed');
       } else {
-        localStorage.setItem('token', data.token);
+        sessionStorage.setItem('token', data.token);
         router.push('/publisher/dashboard');
       }
     } catch (err) {

@@ -199,7 +199,7 @@ export default function CustomerReviews() {
                     handleLogout();
                     }}
                 >
-                    Sign Out
+                    Logout
                 </button>
                 </div>
             )}

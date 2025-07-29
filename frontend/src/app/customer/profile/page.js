@@ -121,7 +121,7 @@ export default function CustomerProfile() {
                   handleLogout();
                 }}
               >
-                Sign Out
+                Logout
               </button>
             </div>
           )}

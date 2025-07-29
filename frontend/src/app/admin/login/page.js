@@ -29,7 +29,7 @@ export default function AdminLoginPage() {
       if (!res.ok) {
         setError(data.error || 'Login failed');
       } else {
-        localStorage.setItem('token', data.token);
+        sessionStorage.setItem('token', data.token);
         router.push('/admin/dashboard'); 
       }
     } catch (err) {

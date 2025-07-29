@@ -115,7 +115,7 @@ export default function OrdersPage() {
                   handleLogout();
                 }}
               >
-                Sign Out
+                Logout
               </button>
             </div>
           )}

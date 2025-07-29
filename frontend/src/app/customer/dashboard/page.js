@@ -176,7 +176,7 @@ export default function CustomerDashboard() {
                   handleLogout();
                 }}
               >
-                Sign Out
+                Logout
               </button>
             </div>
           )}

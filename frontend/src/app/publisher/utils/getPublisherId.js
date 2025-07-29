@@ -3,7 +3,7 @@
 
 export const getPublisherIdFromToken = () => {
   if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
     if (!token) return null;
 
     try {
