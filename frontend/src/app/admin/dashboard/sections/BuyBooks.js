@@ -207,13 +207,13 @@ export default function BuyBooks() {
                   <div className="flex justify-end gap-2 mt-2">
                     <button
                       onClick={() => handleCancelOrder(order.publisher_order_id)}
-                      className="bg-red-600 text-white px-4 py-1 rounded hover:bg-red-500"
+                      className="bg-slate-600 text-white px-4 py-1 rounded hover:bg-slate-500"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={() => handlePayment(order.publisher_order_id)}
-                      className="bg-green-600 text-white px-4 py-1 rounded hover:bg-green-500"
+                      className="bg-slate-600 text-white px-4 py-1 rounded hover:bg-slate-500"
                     >
                       Pay
                     </button>
@@ -267,7 +267,7 @@ export default function BuyBooks() {
 
             <button
               onClick={handlePlaceOrder}
-              className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-500 w-full"
+              className="mt-4 bg-slate-600 text-white px-4 py-2 rounded hover:bg-slate-500 w-full"
             >
               Place Order
             </button>
