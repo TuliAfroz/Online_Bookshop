@@ -1,12 +1,4 @@
-_____________________________________________________________________________________________________________
-
-CREATE TABLE UsedGiftCardsTemp (
-  customer_id INT,
-  giftcard_id VARCHAR
-);
-
-
-
+--1.------------------------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION process_order_on_insert()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -21,7 +13,7 @@ BEGIN
   -- 1. Get latest cart ID
   SELECT cart_id INTO v_cart_id
   FROM Cart
-  WHERE customer_id = NEW.customer_id
+  WHERE customer_id = NEW.customer_id AND status=FALSE
   ORDER BY created_at DESC
   LIMIT 1;
 
@@ -76,8 +68,8 @@ v_total_discount := (v_subtotal * v_point_discount_rate) + (v_subtotal * v_gift_
 
   UPDATE orders
 SET
-  subtotal_price = v_subtotal,
-  discount = v_total_discount,
+  subtotal_price =NEW.Subtotal_Price,
+  discount = NEW.Discount,
   total_price = NEW.Total_price
 WHERE order_id = NEW.order_id;
 
@@ -92,6 +84,7 @@ BEFORE INSERT ON Orders
 FOR EACH ROW
 EXECUTE FUNCTION process_order_on_insert();
 
+--2.--------------------------------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION handle_payment_post_insert()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -102,104 +95,98 @@ DECLARE
   v_order_id INT;
   v_customer_id INT;
   v_use_points BOOLEAN := FALSE;
-  --v_use_giftcard BOOLEAN := FALSE;
   v_current_points INT;
 BEGIN
-  -- 1. Update admin's balance (if the column exists)
+  -- 1. Update admin's balance
   UPDATE Admin
   SET balance = COALESCE(balance, 0) + NEW.amount
   WHERE Admin_ID = NEW.receiver_admin_id;
 
   -- 2. Get order info
-  SELECT Order_ID, Customer_ID,
-         COALESCE(use_points, FALSE)
-         --COALESCE(use_giftcard, FALSE)
+  SELECT Order_ID, Customer_ID, COALESCE(use_points, FALSE)
   INTO v_order_id, v_customer_id, v_use_points
-  --v_use_giftcard
   FROM Orders
   WHERE Order_ID = NEW.order_id;
 
-  -- 3. Deduct 300 points if used and eligible
-  IF v_use_points THEN
-    SELECT Point_count INTO v_current_points
-    FROM Point
+  -- 3. If payer_customer_id is present, handle points logic
+  IF NEW.payer_customer_id IS NOT NULL THEN
+
+    -- Deduct 300 points if used
+    IF v_use_points THEN
+      SELECT Point_count INTO v_current_points
+      FROM Point
+      WHERE Customer_ID = v_customer_id;
+
+      IF v_current_points >= 300 THEN
+        UPDATE Point
+        SET Point_count = Point_count - 300
+        WHERE Customer_ID = v_customer_id;
+      END IF;
+    END IF;
+
+    -- Delete used gift cards
+    DELETE FROM GiftCard
+    WHERE Card_ID IN (
+      SELECT giftcard_id
+      FROM UsedGiftCardsTemp
+      WHERE customer_id = NEW.payer_customer_id
+    );
+
+    -- Add earned points (max 250)
+    v_point := FLOOR(RANDOM() * LEAST(NEW.amount / 5, 250)) + 1;
+
+    UPDATE Point
+    SET Point_count = Point_count + v_point
     WHERE Customer_ID = v_customer_id;
 
-    IF v_current_points >= 300 THEN
-      UPDATE Point
-      SET Point_count = Point_count - 300
-      WHERE Customer_ID = v_customer_id;
+    IF NOT FOUND THEN
+      INSERT INTO Point(Customer_ID, Point_count, Level)
+      VALUES (v_customer_id, v_point, 'Silver');
     END IF;
+
+    -- Recalculate level
+    SELECT Point_count INTO v_total_points
+    FROM Point WHERE Customer_ID = v_customer_id;
+
+    IF v_total_points < 301 THEN
+      v_level := 'Silver';
+    ELSIF v_total_points < 601 THEN
+      v_level := 'Gold';
+    ELSE
+      v_level := 'Platinum';
+    END IF;
+
+    UPDATE Point SET Level = v_level WHERE Customer_ID = v_customer_id;
+
+    -- Save earned points to payment row
+    UPDATE payment
+    SET points_earned = v_point
+    WHERE payer_customer_id = NEW.payer_customer_id AND order_id = NEW.order_id;
+
   END IF;
 
-  -- 4. Delete gift cards used
-  DELETE FROM GiftCard
-  WHERE Card_ID IN (
-    SELECT giftcard_id
-    FROM UsedGiftCardsTemp
-    WHERE customer_id = NEW.payer_customer_id
-  );
-
-  -- 5. Add earned points (max 250)
-  v_point := FLOOR(RANDOM() * LEAST(NEW.amount / 5, 250)) + 1;
-
-  UPDATE Point
-  SET Point_count = Point_count + v_point
-  WHERE Customer_ID = v_customer_id;
-
-  IF NOT FOUND THEN
-    INSERT INTO Point(Customer_ID, Point_count, Level)
-    VALUES (v_customer_id, v_point, 'Silver');
-  END IF;
-
-  -- 6. Recalculate level
-  SELECT Point_count INTO v_total_points
-  FROM Point WHERE Customer_ID = v_customer_id;
-
-  IF v_total_points < 301 THEN
-    v_level := 'Silver';
-  ELSIF v_total_points < 601 THEN
-    v_level := 'Gold';
-  ELSE
-    v_level := 'Platinum';
-  END IF;
-
-  UPDATE Point SET Level = v_level WHERE Customer_ID = v_customer_id;
-
-  -- 7. set cart status
-  SELECT Cart_ID INTO v_cart_id
-  FROM Cart
-  WHERE Customer_ID = v_customer_id
-  ORDER BY Created_At DESC
-  LIMIT 1;
+  -- 4. Update cart status
+  SELECT cart_id INTO v_cart_id
+  FROM Orders
+  WHERE order_id = NEW.order_id;
 
   IF v_cart_id IS NOT NULL THEN
     UPDATE cart
-    SET 
-    status=TRUE
-    where cart_id=v_cart_id;
-    --DELETE FROM Cart WHERE Cart_ID = v_cart_id;
+    SET status = TRUE
+    WHERE cart_id = v_cart_id;
   END IF;
-
-  UPDATE payment
-  SET 
-  points_earned=v_point
-  where payer_customer_id=NEW.payer_customer_id AND order_id=NEW.order_id;
-  
 
   RETURN NULL;
 END;
 $$ LANGUAGE plpgsql;
 
--- Trigger setup
-DROP TRIGGER IF EXISTS trg_handle_payment ON Payment;
 
-CREATE TRIGGER trg_handle_payment
+CREATE OR REPLACE TRIGGER trg_handle_payment
 AFTER INSERT ON Payment
 FOR EACH ROW
 EXECUTE FUNCTION handle_payment_post_insert();
 
-
+--3.-----------------------------------------------------------------------------------------------------------------
 
 CREATE OR REPLACE FUNCTION enforce_review_purchase_check()
 RETURNS TRIGGER AS $$
@@ -225,6 +212,54 @@ CREATE OR REPLACE TRIGGER trg_review_purchase_check
 BEFORE INSERT OR UPDATE ON review
 FOR EACH ROW
 EXECUTE FUNCTION enforce_review_purchase_check();
+
+
+--4.-----------------------------------------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION update_book_average_rating()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Recalculate average rating for the book
+  UPDATE book
+  SET average_rating = (
+    SELECT ROUND(AVG(rating)::numeric, 2)
+    FROM review
+    WHERE review.book_id = NEW.book_id
+  )
+  WHERE book.book_id = NEW.book_id;
+
+  RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+CREATE OR REPLACE TRIGGER trg_update_book_rating_after_insert
+AFTER INSERT OR UPDATE ON review
+FOR EACH ROW
+EXECUTE FUNCTION update_book_average_rating();
+
+--5.------------------------------------------------------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION update_book_average_rating_delete()
+RETURNS TRIGGER AS $$
+BEGIN
+  UPDATE book
+  SET average_rating = (
+    SELECT ROUND(AVG(rating)::numeric, 2)
+    FROM review
+    WHERE review.book_id = OLD.book_id
+  )
+  WHERE book.book_id = OLD.book_id;
+
+  RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE TRIGGER trg_update_book_rating_after_delete
+AFTER DELETE ON review
+FOR EACH ROW
+EXECUTE FUNCTION update_book_average_rating_delete();
+
+
+--6.-------------------------------------------------------------------------------------------------------------------------------
 -- Trigger Function: Before inserting into publisher_order (validate balance and apply discount)
 CREATE OR REPLACE FUNCTION validate_and_place_publisher_order()
 RETURNS TRIGGER AS $$
@@ -255,7 +290,7 @@ BEFORE INSERT ON publisher_order
 FOR EACH ROW
 EXECUTE FUNCTION validate_and_place_publisher_order();
 
-
+--7.-----------------------------------------------------------------------------------------------------------------
 -- Trigger Function: After publisher confirms the order
 CREATE OR REPLACE FUNCTION notify_admin_to_pay()
 RETURNS TRIGGER AS $$
@@ -273,19 +308,30 @@ FOR EACH ROW
 WHEN (OLD.status = 'pending' AND NEW.status = 'confirmed')
 EXECUTE FUNCTION notify_admin_to_pay();
 
-
+--8.---------------------------------------------------------------------------------------------------------------------
 -- Trigger Function: After payment, deduct balance and update inventory
-CREATE OR REPLACE FUNCTION handle_payment_post_insert()
+CREATE OR REPLACE FUNCTION handle_payment_post_insert_pub()
 RETURNS TRIGGER AS $$
 DECLARE
     b_id INT;
     qty INT;
+    pub_id INT;
 BEGIN
     IF NEW.publisher_order_id IS NOT NULL THEN
         -- Deduct from admin 101's balance
         UPDATE admin
         SET balance = balance - NEW.amount
         WHERE admin_id = 101;
+
+         -- Get the publisher ID from the order
+        SELECT publisher_id INTO pub_id
+        FROM publisher_order
+        WHERE publisher_order_id = NEW.publisher_order_id;
+
+        -- Add to the publisher's balance
+        UPDATE publisher
+        SET balance = balance + NEW.amount
+        WHERE publisher_id = pub_id;
 
         -- Update inventory for each book in the order
         FOR b_id, qty IN
@@ -308,12 +354,12 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Re-create the trigger if needed
-CREATE OR REPLACE TRIGGER trg_handle_payment
+CREATE OR REPLACE TRIGGER trg_handle_payment_pub
 AFTER INSERT ON payment
 FOR EACH ROW
-EXECUTE FUNCTION handle_payment_post_insert();
+EXECUTE FUNCTION handle_payment_post_insert_pub();
 
-
+--9.-------------------------------------------------------------------------------------------------------------------------------------
 -- Trigger Function: Before update to cancel order
 CREATE OR REPLACE FUNCTION prevent_cancel_after_payment()
 RETURNS TRIGGER AS $$
@@ -338,3 +384,7 @@ BEFORE UPDATE ON publisher_order
 FOR EACH ROW
 WHEN (NEW.status = 'cancelled')
 EXECUTE FUNCTION prevent_cancel_after_payment();
+
+
+
+

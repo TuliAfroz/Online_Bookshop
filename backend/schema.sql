@@ -173,18 +173,7 @@ CREATE TABLE public.review (
 );
 
 
--- Table to track shipments for customer orders
--- create table public.customer_shipment (
---   shipment_id integer not null,
---   order_id integer null,
---   shipment_status character varying not null,
---   shipment_date date null,
---   constraint customer_shipment_pkey primary key (shipment_id),
---   constraint customer_shipment_order_id_fkey foreign KEY (order_id) references orders (order_id)
--- ) TABLESPACE pg_default;
-
-create table public.usedgiftcardstemp (
-  customer_id integer null,
-  giftcard_id character varying null
-) TABLESPACE pg_default;
-
+CREATE TABLE UsedGiftCardsTemp (
+  customer_id INT,
+  giftcard_id VARCHAR
+);
