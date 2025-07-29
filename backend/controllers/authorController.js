@@ -2,26 +2,38 @@ import pool from '../config/db.js';
 
 // Get all authors
 export const getAllAuthors = async (req, res) => {
-  const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 18;
-  const offset = (page - 1) * limit;
+  const page = parseInt(req.query.page) || null;
+  const limit = parseInt(req.query.limit) || null;
 
   try {
-    const result = await pool.query(
-      `SELECT * FROM Author ORDER BY author_id ASC LIMIT $1 OFFSET $2`,
-      [limit, offset]
-    );
+    let query = `SELECT * FROM Author ORDER BY author_name ASC`;
+    let params = [];
 
-    const totalCount = await pool.query(`SELECT COUNT(*) FROM Author`);
-    const total = parseInt(totalCount.rows[0].count);
-    const totalPages = Math.ceil(total / limit); // 👈 calculate total pages
+    if (page && limit) {
+      const offset = (page - 1) * limit;
+      query += ` LIMIT $1 OFFSET $2`;
+      params = [limit, offset];
+    }
 
-    res.status(200).json({
-      success: true,
-      data: result.rows,
-      total,
-      totalPages, // 👈 send this
-    });
+    const result = await pool.query(query, params);
+
+    // If paginated, also return total pages
+    if (page && limit) {
+      const totalCount = await pool.query(`SELECT COUNT(*) FROM Author`);
+      const total = parseInt(totalCount.rows[0].count);
+      const totalPages = Math.ceil(total / limit);
+
+      return res.status(200).json({
+        success: true,
+        data: result.rows,
+        total,
+        totalPages,
+      });
+    }
+
+    // Otherwise return full list
+    return res.status(200).json({ success: true, data: result.rows });
+
   } catch (error) {
     console.error('Error fetching authors:', error);
     res.status(500).json({ error: 'Internal Server Error' });

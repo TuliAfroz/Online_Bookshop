@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getPublisherIdFromToken } from '../../utils/getPublisherId';
 
 export default function AddBookForm() {
@@ -16,19 +16,23 @@ export default function AddBookForm() {
   const [authors, setAuthors] = useState([]);
   const [message, setMessage] = useState('');
 
-  // Fetch authors on load
-  useEffect(() => {
-    async function fetchAuthors() {
-      try {
-        const res = await fetch('http://localhost:3000/api/authors');
-        const data = await res.json();
-        if (data.success) setAuthors(data.data);
-      } catch (error) {
-        console.error('Error fetching authors:', error);
-      }
+  // Fetch authors function
+  const fetchAuthors = useCallback(async () => {
+    try {
+      const res = await fetch('http://localhost:3000/api/authors');
+      const data = await res.json();
+      if (data.success) setAuthors(data.data);
+    } catch (error) {
+      console.error('Error fetching authors:', error);
     }
-    fetchAuthors();
   }, []);
+
+  // Initial load + refresh on window focus
+  useEffect(() => {
+    fetchAuthors();
+    window.addEventListener('focus', fetchAuthors);
+    return () => window.removeEventListener('focus', fetchAuthors);
+  }, [fetchAuthors]);
 
   // Handle form field changes
   const handleChange = (e) => {
@@ -53,16 +57,16 @@ export default function AddBookForm() {
       (author) => author.author_name === formData.Author_Name
     );
 
-   if (!selectedAuthor) {
-  // Redirect to Add Author page
-  setMessage(`Author "${formData.Author_Name}" not found. Redirecting to Add Author page...`);
-  setTimeout(() => {
-    window.location.href = '/publisher/dashboard?tab=add-author';
-  }, 2000);
-  return;
-}
+    if (!selectedAuthor) {
+      // Redirect to Add Author page
+      setMessage(`Author "${formData.Author_Name}" not found. Redirecting to Add Author page...`);
+      setTimeout(() => {
+        window.location.href = '/publisher/dashboard?tab=add-author';
+      }, 2000);
+      return;
+    }
 
-    // Prepare payload with IDs and optional fields
+    // Prepare payload
     const payload = {
       Book_ID: formData.Book_ID,
       Title: formData.Title,
@@ -105,6 +109,9 @@ export default function AddBookForm() {
         Author_Name: '',
         Price: '',
       });
+
+      // Refresh authors after book addition (optional)
+      fetchAuthors();
 
     } catch (error) {
       console.error('Error submitting form:', error);
