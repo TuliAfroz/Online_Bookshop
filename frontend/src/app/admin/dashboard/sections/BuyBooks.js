@@ -5,17 +5,14 @@ import axios from 'axios';
 
 export default function BuyBooks() {
   const [publishers, setPublishers] = useState([]);
-  const [selectedPublisher, setSelectedPublisher] = useState(null);
+  const [selectedPublisher, setSelectedPublisher] = useState('');
   const [books, setBooks] = useState([]);
   const [quantities, setQuantities] = useState({});
   const [subtotal, setSubtotal] = useState(0);
-  const [orderId, setOrderId] = useState(null);
-  const [orderStatus, setOrderStatus] = useState('');
-  const [transactionId, setTransactionId] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('');
+  const [pendingOrders, setPendingOrders] = useState([]);
+  const [orderStatusMap, setOrderStatusMap] = useState({});
+  const [transactionInputs, setTransactionInputs] = useState({});
   const adminId = 101;
-
-  const [adminBalance, setAdminBalance] = useState(0);
 
   // Fetch publishers
   useEffect(() => {
@@ -23,72 +20,64 @@ export default function BuyBooks() {
       try {
         const res = await fetch('http://localhost:3000/api/publishers');
         const data = await res.json();
-        if (Array.isArray(data.data)) {
-          setPublishers(data.data);
-        } else {
-          console.error('Invalid publisher response format:', data);
-        }
-      } catch (error) {
-        console.error('Failed to fetch publishers:', error);
+        setPublishers(data.data || []);
+      } catch (err) {
+        console.error('Failed to fetch publishers:', err);
       }
     };
     fetchPublishers();
   }, []);
 
-  // Fetch books
+  // Fetch books of selected publisher
   useEffect(() => {
     if (!selectedPublisher) return;
     axios.get(`http://localhost:3000/api/books/publisher/${selectedPublisher}`)
       .then(res => {
-        const bookList = res.data.data || [];
-        setBooks(bookList);
+        setBooks(res.data.data || []);
         setQuantities({});
       })
       .catch(err => console.error(err));
   }, [selectedPublisher]);
 
-  // Subtotal calculation
+  // Fetch pending orders
+  const fetchPendingOrders = async () => {
+    try {
+      const res = await axios.get('http://localhost:3000/api/publisher-orders/admin/pending-orders');
+      setPendingOrders(res.data || []);
+    } catch (err) {
+      console.error('Failed to fetch pending orders:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchPendingOrders();
+  }, []);
+
+  // Poll order status
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      for (const order of pendingOrders) {
+        try {
+          const res = await axios.get(`http://localhost:3000/api/publisher-orders/${order.publisher_order_id}/status`);
+          const status = res.data.status;
+          setOrderStatusMap(prev => ({ ...prev, [order.publisher_order_id]: status }));
+        } catch (err) {
+          console.error('Polling error:', err);
+        }
+      }
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [pendingOrders]);
+
+  // Subtotal Calculation
   useEffect(() => {
     let sum = 0;
     for (const book of books) {
-      const q = quantities[book.book_id] || 0;
-      sum += q * book.price;
+      const qty = quantities[book.book_id] || 0;
+      sum += qty * book.price;
     }
     setSubtotal(sum);
   }, [quantities, books]);
-
-    // Polling for order status
-  useEffect(() => {
-    if (!orderId) return;
-  
-    const interval = setInterval(async () => {
-      try {
-
-        if (!orderId || orderId === 'null') return;
-
-        const res = await axios.get(`http://localhost:3000/api/publisher-orders/${orderId}/status`);
-        const status = res.data.status;
-  
-        setOrderStatus(status);
-  
-        if (status === 'confirmed') {
-          clearInterval(interval); // Stop polling once confirmed
-        }
-      } catch (err) {
-        console.error('Failed to fetch order status:', err);
-      }
-    }, 3000); // poll every 3 seconds
-  
-    return () => clearInterval(interval); // cleanup on unmount or orderId change
-  }, [orderId]);
-  
-
-  // Admin balance (from admin 101)
-  useEffect(() => {
-    axios.get(`http://localhost:3000/api/admin/101/balance`)
-      .then(res => setAdminBalance(res.data.balance || 0))
-      .catch(err => console.error(err));
-  }, []);
 
   const updateQuantity = (bookId, delta) => {
     setQuantities(prev => {
@@ -99,7 +88,7 @@ export default function BuyBooks() {
 
   const handlePlaceOrder = async () => {
     const orderedBooks = books
-      .filter(book => (quantities[book.book_id] || 0) > 0)
+      .filter(book => quantities[book.book_id] > 0)
       .map(book => ({
         book_id: book.book_id,
         quantity: quantities[book.book_id],
@@ -116,128 +105,98 @@ export default function BuyBooks() {
       });
 
       alert('✅ Order placed!');
-      setOrderId(res.data.publisher_order_id);
-      setOrderStatus('pending');
+      setQuantities({});
+      setSelectedPublisher('');
+      setBooks([]);
+      fetchPendingOrders();
     } catch (err) {
       console.error(err);
       alert('❌ Failed to place order.');
     }
   };
 
-  const handleCancelOrder = async () => {
-    if (!orderId) return;
-    await axios.delete(`http://localhost:3000/api/publisher-orders/cancel/${orderId}`);
-    alert('🛑 Order cancelled');
-    setOrderId(null);
-    setOrderStatus('');
+  const handleCancelOrder = async (orderId) => {
+    try {
+      await axios.delete(`http://localhost:3000/api/publisher-orders/cancel/${orderId}`);
+      alert('🛑 Order cancelled');
+      fetchPendingOrders();
+    } catch (err) {
+      console.error('Cancel error:', err);
+    }
   };
 
-  const handlePayment = async () => {
+  const handlePayment = async (orderId) => {
+    const { transactionId, paymentMethod } = transactionInputs[orderId] || {};
     if (!transactionId || !paymentMethod) {
-      alert('Enter transaction ID and select payment method.');
+      alert('Provide transaction ID and method');
       return;
     }
 
     try {
-      await axios.post(`http://localhost:3000/api/publisher-orders/payment`, {
+      await axios.post('http://localhost:3000/api/publisher-orders/payment', {
         publisher_order_id: orderId,
         transaction_id: transactionId,
         method: paymentMethod,
       });
 
-      alert('✅ Payment successful and inventory updated');
-      setOrderId(null);
-      setOrderStatus('');
-      setQuantities({});
+      alert('✅ Payment successful');
+      fetchPendingOrders();
     } catch (err) {
-      console.error(err);
+      console.error('Payment error:', err);
       alert('❌ Payment failed');
     }
+  };
+
+  const handleInputChange = (orderId, field, value) => {
+    setTransactionInputs(prev => ({
+      ...prev,
+      [orderId]: { ...prev[orderId], [field]: value },
+    }));
   };
 
   const discount = subtotal * 0.05;
   const total = subtotal - discount;
 
   return (
-    <div className="max-w-6xl mx-auto p-6">
-      <h2 className="text-2xl font-bold mb-4 text-center">Buy Books</h2>
-
-      <select
-        className="border rounded p-2 w-full mb-6"
-        onChange={(e) => setSelectedPublisher(e.target.value)}
-      >
-        <option value="">Select Publisher</option>
-        {publishers.map(p => (
-          <option key={p.publisher_id} value={p.publisher_id}>{p.publisher_name}</option>
-        ))}
-      </select>
-
-      {books.length > 0 && (
-        <>
-          <div className="space-y-4">
-            {books.map(book => (
-              <div
-                key={book.book_id}
-                className="flex items-center gap-4 bg-white shadow p-4 rounded"
-              >
-                <img src={book.cover_image_url} alt={book.title} className="w-20 h-28 object-cover rounded" />
-                <div className="flex-1">
-                  <h3 className="font-bold text-lg">{book.title}</h3>
-                  <p className="text-sm text-gray-600">৳{book.price}</p>
-                </div>
-
-                <div className="flex items-center border rounded">
-                  <button onClick={() => updateQuantity(book.book_id, -1)} className="px-3 py-2 bg-gray-100">–</button>
-                  <span className="px-4">{quantities[book.book_id] || 0}</span>
-                  <button onClick={() => updateQuantity(book.book_id, 1)} className="px-3 py-2 bg-gray-100">+</button>
-                </div>
-
-                <div className="text-right text-sm font-semibold ml-6">
-                  ৳{(quantities[book.book_id] || 0) * book.price}
-                </div>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-6 max-w-7xl mx-auto">
+      {/* LEFT: Pending Orders */}
+      <div>
+        <h2 className="text-xl font-bold mb-4 text-center">Pending Orders</h2>
+        {pendingOrders.length === 0 ? (
+          <p className="text-gray-500 text-center">No pending orders</p>
+        ) : (
+          pendingOrders.map(order => (
+            <div key={order.publisher_order_id} className="bg-white p-4 rounded shadow mb-4 space-y-2">
+              <div className="font-semibold">Order ID: {order.publisher_order_id}</div>
+              <ul className="list-disc ml-5 text-sm">
+                {order.items.map((item, i) => (
+                  <li key={i}>
+                    {item.title} — {item.quantity} pcs @ ৳{item.price_per_unit}
+                  </li>
+                ))}
+              </ul>
+              <div className="text-sm font-medium">Total: ৳{order.total_amount}</div>
+              <div className="text-sm text-yellow-600">
+                Status: {orderStatusMap[order.publisher_order_id] || 'pending'}
               </div>
-            ))}
-          </div>
 
-          <div className="text-right mt-6 text-lg">
-            <div>
-              <span className="font-semibold">Subtotal:</span>{' '}
-              <span className="font-normal"> ৳{subtotal.toFixed(2)}</span>
-            </div>
-            <div>
-              <span className="font-semibold">Discount (5%):</span>{' '}
-              <span className="font-normal"> -৳{discount.toFixed(2)}</span>
-            </div>
-            <div className="text-xl">
-              <span className="font-bold">Total:</span>{' '}
-              <span className="font-normal"> ৳{total.toFixed(2)}</span>
-            </div>
-          </div>
-
-          {orderId ? (
-            <div className="mt-6 space-y-4 border-t pt-4">
-              <h3 className="font-semibold text-lg">Order ID: {orderId}</h3>
-
-              {orderStatus === 'pending' && (
-                <div className="text-yellow-600 font-medium">
-                  🔄 Your order is <strong>pending</strong>. Please wait for publisher confirmation.
-                </div>
-              )}
-
-              {orderStatus === 'confirmed' && (
+              {orderStatusMap[order.publisher_order_id] === 'confirmed' && (
                 <>
                   <input
                     type="text"
                     className="border rounded p-2 w-full"
                     placeholder="Transaction ID"
-                    value={transactionId}
-                    onChange={(e) => setTransactionId(e.target.value)}
+                    value={transactionInputs[order.publisher_order_id]?.transactionId || ''}
+                    onChange={(e) =>
+                      handleInputChange(order.publisher_order_id, 'transactionId', e.target.value)
+                    }
                   />
-
                   <select
                     className="border rounded p-2 w-full"
-                    value={paymentMethod}
-                    onChange={(e) => setPaymentMethod(e.target.value)}
+                    value={transactionInputs[order.publisher_order_id]?.paymentMethod || ''}
+                    onChange={(e) =>
+                      handleInputChange(order.publisher_order_id, 'paymentMethod', e.target.value)
+                    }
                   >
                     <option value="">Select Payment Method</option>
                     <option value="Bkash">Bkash</option>
@@ -245,36 +204,76 @@ export default function BuyBooks() {
                     <option value="Rocket">Rocket</option>
                   </select>
 
-                  <div className="flex justify-end gap-2 mt-4">
+                  <div className="flex justify-end gap-2 mt-2">
                     <button
-                      onClick={handleCancelOrder}
-                      className="bg-slate-600 text-white px-4 py-2 rounded hover:bg-slate-500"
+                      onClick={() => handleCancelOrder(order.publisher_order_id)}
+                      className="bg-red-600 text-white px-4 py-1 rounded hover:bg-red-500"
                     >
-                      Cancel Order
+                      Cancel
                     </button>
                     <button
-                      onClick={handlePayment}
-                      className="bg-slate-600 text-white px-4 py-2 rounded hover:bg-slate-500"
+                      onClick={() => handlePayment(order.publisher_order_id)}
+                      className="bg-green-600 text-white px-4 py-1 rounded hover:bg-green-500"
                     >
-                      Make Payment
+                      Pay
                     </button>
                   </div>
-
                 </>
               )}
             </div>
-          ) : (
+          ))
+        )}
+      </div>
+
+      {/* RIGHT: Buy Books */}
+      <div>
+        <h2 className="text-xl font-bold mb-4 text-center">Buy Books</h2>
+
+        <select
+          className="border rounded p-2 w-full mb-4"
+          value={selectedPublisher}
+          onChange={(e) => setSelectedPublisher(e.target.value)}
+        >
+          <option value="">Select Publisher</option>
+          {publishers.map(p => (
+            <option key={p.publisher_id} value={p.publisher_id}>
+              {p.publisher_name}
+            </option>
+          ))}
+        </select>
+
+        {books.map(book => (
+          <div key={book.book_id} className="flex items-center gap-4 bg-white shadow p-4 rounded mb-3">
+            <img src={book.cover_image_url} className="w-16 h-24 object-cover rounded" />
+            <div className="flex-1">
+              <div className="font-semibold">{book.title}</div>
+              <div className="text-sm text-gray-500">৳{book.price}</div>
+            </div>
+            <div className="flex items-center border rounded">
+              <button onClick={() => updateQuantity(book.book_id, -1)} className="px-3">–</button>
+              <span className="px-4">{quantities[book.book_id] || 0}</span>
+              <button onClick={() => updateQuantity(book.book_id, 1)} className="px-3">+</button>
+            </div>
+          </div>
+        ))}
+
+        {books.length > 0 && (
+          <>
+            <div className="text-right mt-4 space-y-1 text-sm">
+              <div>Subtotal: ৳{subtotal.toFixed(2)}</div>
+              <div>Discount (5%): -৳{discount.toFixed(2)}</div>
+              <div className="text-lg font-semibold">Total: ৳{total.toFixed(2)}</div>
+            </div>
+
             <button
               onClick={handlePlaceOrder}
-              className="mt-6 bg-slate-600 text-white px-4 py-2 py-2 rounded hover:bg-slate-500 mx-auto block"
+              className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-500 w-full"
             >
               Place Order
             </button>
-          )}
-        </>
-      )}
+          </>
+        )}
+      </div>
     </div>
   );
 }
-
-// in this page, keep 2 columns. one for pending books and the other for buying books. once a books order is placed and it is in pending state, it will be added to the left column(pending orders). and then the buy book column will be cleared. once an order is confirmed, the futher payment and other functionalities will be done in the left column ....now give me a fresh, correct code like you just did

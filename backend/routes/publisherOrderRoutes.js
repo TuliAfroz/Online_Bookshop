@@ -7,7 +7,8 @@ import {
     getPublisherOrderStatus,
     getPendingOrdersForPublisher,
     getPreviousOrdersForPublisher,
-    getAllPreviousPublisherOrders
+    getAllPreviousPublisherOrders,
+    getAllPendingPublisherOrders
 } from '../controllers/publisherOrderController.js';
 
 const router = express.Router();
@@ -20,6 +21,7 @@ router.get('/:orderId/status', getPublisherOrderStatus);
 router.get('/pending/:publisher_id', getPendingOrdersForPublisher);
 router.get('/previous/:publisher_id', getPreviousOrdersForPublisher);
 router.get('/admin/previous-orders', getAllPreviousPublisherOrders);
+router.get('/admin/pending-orders', getAllPendingPublisherOrders);
 
 
 

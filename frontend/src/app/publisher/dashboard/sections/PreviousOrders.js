@@ -51,7 +51,9 @@ export default function PreviousOrders() {
               </li>
             ))}
           </ul>
-
+          <div className="text-sm text-yellow-600">
+                Status: {order.status }
+              </div>
           <div className="font-semibold text-right mb-2">Total: ৳{order.total_amount}</div>
         </div>
       ))}

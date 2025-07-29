@@ -199,7 +199,7 @@ export const getPendingOrdersForPublisher = async (req, res) => {
 
   try {
     const result = await pool.query(
-      `SELECT po.publisher_order_id, po.total_amount, poi.quantity, poi.price_per_unit,
+      `SELECT po.publisher_order_id, po.total_amount, po.status, poi.quantity, poi.price_per_unit,
               b.title
        FROM publisher_order po
        JOIN publisher_order_item poi ON po.publisher_order_id = poi.publisher_order_id
@@ -220,6 +220,7 @@ export const getPendingOrdersForPublisher = async (req, res) => {
         grouped[row.publisher_order_id] = {
           publisher_order_id: row.publisher_order_id,
           total_amount: row.total_amount,
+          status: row.status, 
           items: [],
         };
       }
@@ -243,11 +244,11 @@ export const getPreviousOrdersForPublisher = async (req, res) => {
 
   try {
     const result = await pool.query(
-      `SELECT po.publisher_order_id, po.total_amount, poi.quantity, poi.price_per_unit, b.title
+      `SELECT po.publisher_order_id, po.total_amount, po.status, poi.quantity, poi.price_per_unit, b.title
        FROM publisher_order po
        JOIN publisher_order_item poi ON po.publisher_order_id = poi.publisher_order_id
        JOIN book b ON poi.book_id = b.book_id
-       WHERE po.publisher_id = $1 AND po.status IN ('confirmed', 'cancelled')
+       WHERE po.publisher_id = $1 AND po.status IN ('confirmed', 'cancelled', 'completed')
        ORDER BY po.publisher_order_id DESC`,
       [publisher_id]
     );
@@ -262,6 +263,7 @@ export const getPreviousOrdersForPublisher = async (req, res) => {
         grouped[row.publisher_order_id] = {
           publisher_order_id: row.publisher_order_id,
           total_amount: row.total_amount,
+          status: row.status, 
           items: [],
         };
       }
@@ -290,7 +292,7 @@ export const getAllPreviousPublisherOrders = async (req, res) => {
       JOIN publisher_order_item poi ON po.publisher_order_id = poi.publisher_order_id
       JOIN book b ON poi.book_id = b.book_id
       JOIN publisher p ON po.publisher_id = p.publisher_id
-      WHERE po.status IN ('confirmed', 'cancelled')
+      WHERE po.status IN ('confirmed', 'cancelled' , 'completed')
       ORDER BY po.publisher_order_id DESC
     `);
 
@@ -320,3 +322,44 @@ export const getAllPreviousPublisherOrders = async (req, res) => {
   }
 };
 
+// Get all pending/confirmed publisher orders (admin view)
+export const getAllPendingPublisherOrders = async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT po.publisher_order_id, po.total_amount, po.status,
+             p.publisher_name, p.publisher_img_url,
+             poi.quantity, poi.price_per_unit, b.title
+      FROM publisher_order po
+      JOIN publisher_order_item poi ON po.publisher_order_id = poi.publisher_order_id
+      JOIN book b ON poi.book_id = b.book_id
+      JOIN publisher p ON po.publisher_id = p.publisher_id
+      WHERE po.status IN ('pending', 'confirmed')
+      ORDER BY po.publisher_order_id DESC
+    `);
+
+    // Group by order
+    const grouped = {};
+    for (const row of result.rows) {
+      if (!grouped[row.publisher_order_id]) {
+        grouped[row.publisher_order_id] = {
+          publisher_order_id: row.publisher_order_id,
+          publisher_name: row.publisher_name,
+          publisher_img_url: row.publisher_img_url,
+          total_amount: row.total_amount,
+          status: row.status,
+          items: [],
+        };
+      }
+      grouped[row.publisher_order_id].items.push({
+        title: row.title,
+        quantity: row.quantity,
+        price_per_unit: row.price_per_unit,
+      });
+    }
+
+    res.status(200).json(Object.values(grouped));
+  } catch (err) {
+    console.error('Error fetching pending publisher orders:', err);
+    res.status(500).json({ message: 'Failed to fetch pending publisher orders' });
+  }
+};
