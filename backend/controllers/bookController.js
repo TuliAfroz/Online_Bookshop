@@ -89,25 +89,27 @@ export const getAllBooks = async(req, res) => {
 export const createBook = async (req, res) => {
   const {
     Book_ID, Title, Description,
-    Author_ID, Publisher_ID, Category_ID, Price, Cover_Image_URL
+    Author_ID, Publisher_ID, Price, Cover_Image_URL
   } = req.body;
 
-  if(!Book_ID || !Title  ||
-     !Author_ID || !Publisher_ID || !Category_ID || !Price ) {
-    return res.status(400).json({ error: 'All fields are required' });
-  } 
+  // Remove Category_ID from required fields
+  if (!Book_ID || !Title || !Author_ID || !Publisher_ID || !Price) {
+    return res.status(400).json({ error: 'All fields except category are required' });
+  }
 
   try {
-        // Check if Author exists
+    // Check if Author exists
     const authorCheck = await pool.query(
       'SELECT * FROM Author WHERE Author_ID = $1',
       [Author_ID]
     );
     if (authorCheck.rows.length === 0) {
-      return res.status(200).json({ redirect: '/admin/dashboard/section/AddAuthorForm', message: `Author ID ${Author_ID} not found. Please add the author.` });
-
+      return res.status(200).json({
+  redirect: '/publisher/dashboard?tab=add-author',
+  message: `Author ID ${Author_ID} not found. Please add the author.`
+});
     }
-
+                                                                         
     // Check if Publisher exists
     const publisherCheck = await pool.query(
       'SELECT * FROM Publisher WHERE Publisher_ID = $1',
@@ -117,45 +119,25 @@ export const createBook = async (req, res) => {
       return res.status(307).json({ redirect: '/api/publishers', message: `Publisher ID ${Publisher_ID} not found` });
     }
 
-    // Check if all category IDs exist
-    const categoryCheck = await pool.query(
-      `SELECT Category_ID FROM Category WHERE Category_ID = ANY($1::int[])`,
-      [Category_ID]
-    );
-    if (categoryCheck.rows.length !== Category_ID.length) {
-      return res.status(400).json({ redirect: '/api/categories', message: `One or more category IDs not found` });
-    }
-
-     // ✅ Check if the book already exists
+    // ✅ Check if the book already exists
     const existingBook = await pool.query(
       'SELECT * FROM Book WHERE Book_ID = $1',
       [Book_ID]
     );
 
     if (existingBook.rows.length > 0) {
-      // // 🔁 Book exists → just update inventory count
-      // await pool.query(
-      //   `UPDATE Inventory SET Quantity = Quantity + 1 WHERE Book_ID = $1`,
-      //   [Book_ID]
-      // );
       return res.status(200).json({ message: 'Book already exists.' });
     }
-    // 1. Insert book
+
+    // 1. Insert book (category is not included)
     const bookResult = await pool.query(
-      `INSERT INTO Book (Book_ID, Title, Description,  Author_ID, Publisher_ID, Price, Cover_Image_URL)
+      `INSERT INTO Book (Book_ID, Title, Description, Author_ID, Publisher_ID, Price, Cover_Image_URL)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING *`,
-      [Book_ID, Title, Description,  Author_ID, Publisher_ID, Price, Cover_Image_URL]
+      [Book_ID, Title, Description, Author_ID, Publisher_ID, Price, Cover_Image_URL]
     );
 
-    // 5. Insert BookCategory entries
-    const categoryPromises = Category_ID.map(categoryId =>
-      pool.query(
-        `INSERT INTO BookCategory (Book_ID, Category_ID) VALUES ($1, $2)`,
-        [Book_ID, categoryId]
-      )
-    );
-    await Promise.all(categoryPromises);
+    // No BookCategory insertion
 
     // // Add to Inventory (initial count = 1)
     // await pool.query(
@@ -163,12 +145,12 @@ export const createBook = async (req, res) => {
     //   [Book_ID]
     // );
 
-    console.log('✅ Book  inserted:', req.body);
+    console.log('✅ Book inserted:', req.body);
 
     res.status(201).json({ success: true, data: bookResult.rows[0] });
 
   } catch (error) {
-    console.error('❌ Error creating book with author/category check:', error);
+    console.error('❌ Error creating book:', error);
     console.error(error.stack);
     res.status(500).json({ error: 'Internal Server Error' });
   }

@@ -10,7 +10,6 @@ export default function AddBookForm() {
     Cover_Image_URL: '',
     Author_ID: '',
     Publisher_ID: '',
-    Category_ID: '',
     Price: '',
   });
 
@@ -18,12 +17,7 @@ export default function AddBookForm() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-
-    if (name === 'Category_ID') {
-      setFormData({ ...formData, [name]: value.split(',').map(id => parseInt(id.trim())) });
-    } else {
-      setFormData({ ...formData, [name]: value });
-    }
+    setFormData({ ...formData, [name]: value });
   };
 
   const handleSubmit = async (e) => {
@@ -31,7 +25,7 @@ export default function AddBookForm() {
     setMessage('');
 
     try {
-      const res = await fetch('/api/books', {
+      const res = await fetch('http://localhost:3000/api/books', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
@@ -113,15 +107,6 @@ export default function AddBookForm() {
         type="number"
         placeholder="Publisher ID"
         value={formData.Publisher_ID}
-        onChange={handleChange}
-        className="w-full p-2 border rounded"
-        required
-      />
-      <input
-        name="Category_ID"
-        type="text"
-        placeholder="Category IDs (comma-separated)"
-        value={formData.Category_ID}
         onChange={handleChange}
         className="w-full p-2 border rounded"
         required

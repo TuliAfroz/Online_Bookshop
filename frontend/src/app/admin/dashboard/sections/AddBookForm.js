@@ -4,7 +4,6 @@ import { useState } from 'react';
 
 export default function AddBookForm() {
   const [formData, setFormData] = useState({
-    Book_ID: '',
     Title: '',
     Description: '',
     Cover_Image_URL: '',
@@ -66,15 +65,6 @@ export default function AddBookForm() {
       <h2 className="text-2xl font-bold mb-4 text-center">Add New Book</h2>
       {message && <p className="text-sm text-red-600 text-center">{message}</p>}
 
-      <input
-        name="Book_ID"
-        type="number"
-        placeholder="Book ID"
-        value={formData.Book_ID}
-        onChange={handleChange}
-        className="w-full p-2 border rounded"
-        required
-      />
       <input
         name="Title"
         type="text"

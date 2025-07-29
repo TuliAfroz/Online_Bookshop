@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Menu } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
 
 import AddBookForm from './sections/AddBookForm';
 import AddAuthorForm from './sections/AddAuthorForm';
@@ -23,9 +24,17 @@ const tabs = [
 ];
 
 export default function PublisherDashboard() {
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState('search');
   const [menuOpen, setMenuOpen] = useState(false);
   const [publisherId, setPublisherId] = useState(null);
+
+  useEffect(() => {
+    const tabFromUrl = searchParams.get('tab');
+    if (tabFromUrl) {
+      setActiveTab(tabFromUrl);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     // Fetch publisher ID from localStorage or token
