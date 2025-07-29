@@ -595,47 +595,71 @@ export const getBooksGroupedByCategory = async (req, res) => {
   }
 };
 
-// export const updateBookPrice = async (req, res) => {
-//   const { bookId } = req.params;
-//   const { newPrice } = req.body;
+export const assignCategory = async (req, res) => {
+  const { book_id, category_ids } = req.body;
 
-//   console.log('Received updateBookPrice request');
-//   console.log('Params:', req.params);
-//   console.log('Body:', req.body);
+  // Validate book_id
+  if (!book_id) {
+    return res.status(400).json({
+      success: false,
+      error: 'Book ID is required',
+    });
+  }
 
-//   try {
-//     const numericPrice = parseFloat(newPrice);
-//     const numericBookId = parseInt(bookId, 10);
+  try {
+    // Check if book exists
+    const bookCheck = await pool.query(
+      `SELECT * FROM Book WHERE book_id = $1`,
+      [book_id]
+    );
+    if (bookCheck.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Book not found' });
+    }
 
-//     console.log('Parsed numericPrice:', numericPrice);
-//     console.log('Parsed numericBookId:', numericBookId);
+    // ** remove previous categories first**
+    await pool.query(`DELETE FROM BookCategory WHERE book_id = $1`, [book_id]);
 
-//     if (isNaN(numericPrice)) {
-//       console.error('Invalid price:', newPrice);
-//       return res.status(400).json({ error: 'Invalid new price' });
-//     }
+    //If category_ids is empty, just return success after clearing
+    if (!Array.isArray(category_ids) || category_ids.length === 0) {
+      return res.status(200).json({
+        success: true,
+        message: 'All categories removed from the book',
+        book_id,
+        assigned_categories: [],
+      });
+    }
 
-//     if (isNaN(numericBookId)) {
-//       console.error('Invalid bookId:', bookId);
-//       return res.status(400).json({ error: 'Invalid book ID' });
-//     }
+    // Optionally check if provided categories exist
+    const categoryCheck = await pool.query(
+      `SELECT category_id FROM Category WHERE category_id = ANY($1)`,
+      [category_ids]
+    );
+    const validCategoryIds = categoryCheck.rows.map((row) => row.category_id);
+    const invalidIds = category_ids.filter((id) => !validCategoryIds.includes(id));
+    if (invalidIds.length > 0) {
+      return res.status(400).json({
+        success: false,
+        error: `Invalid category IDs: ${invalidIds.join(', ')}`,
+      });
+    }
 
-//     const result = await db.query(
-//       'UPDATE book SET price = $1 WHERE book_id = $2 RETURNING *',
-//       [numericPrice, numericBookId]
-//     );
+    // Insert new categories
+    const insertPromises = category_ids.map((categoryId) =>
+      pool.query(
+        `INSERT INTO BookCategory (book_id, category_id) VALUES ($1, $2)`,
+        [book_id, categoryId]
+      )
+    );
+    await Promise.all(insertPromises);
 
-//     console.log('DB update result:', result);
-
-//     if (result.rowCount === 0) {
-//       console.warn('No book found with id:', numericBookId);
-//       return res.status(404).json({ error: 'Book not found' });
-//     }
-
-//     console.log('Price updated successfully for book_id:', numericBookId);
-//     res.status(200).json({ message: 'Price updated successfully', book: result.rows[0] });
-//   } catch (err) {
-//     console.error('Error updating book price:', err);
-//     res.status(500).json({ error: 'Internal server error' });
-//   }
-// };
+    return res.status(200).json({
+      success: true,
+      message: 'Categories assigned successfully',
+      book_id,
+      assigned_categories: category_ids,
+    });
+  } catch (error) {
+    console.error('Error assigning categories:', error);
+    return res.status(500).json({ success: false, error: 'Internal Server Error' });
+  }
+};
