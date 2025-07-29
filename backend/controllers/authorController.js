@@ -7,16 +7,20 @@ export const getAllAuthors = async (req, res) => {
   const offset = (page - 1) * limit;
 
   try {
-    const result = await pool.query(`
-      SELECT * FROM Author ORDER BY author_id ASC LIMIT $1 OFFSET $2
-    `, [limit, offset]);
+    const result = await pool.query(
+      `SELECT * FROM Author ORDER BY author_id ASC LIMIT $1 OFFSET $2`,
+      [limit, offset]
+    );
 
     const totalCount = await pool.query(`SELECT COUNT(*) FROM Author`);
+    const total = parseInt(totalCount.rows[0].count);
+    const totalPages = Math.ceil(total / limit); // 👈 calculate total pages
 
     res.status(200).json({
       success: true,
       data: result.rows,
-      total: parseInt(totalCount.rows[0].count),
+      total,
+      totalPages, // 👈 send this
     });
   } catch (error) {
     console.error('Error fetching authors:', error);
@@ -24,9 +28,10 @@ export const getAllAuthors = async (req, res) => {
   }
 };
 
+
 // Create new author
 export const createAuthor = async (req, res) => {
-  const { Author_ID, Author_Name, Total_books } = req.body;
+  const { Author_ID, Author_Name, Total_books, Author_Image_URL } = req.body;
 
   if (!Author_Name || !Author_ID) {
     return res.status(400).json({ error: 'Author_Name and Author_ID are required' });
@@ -34,8 +39,9 @@ export const createAuthor = async (req, res) => {
 
   try {
     const result = await pool.query(
-      `INSERT INTO Author (Author_ID, Author_Name, Total_books) VALUES ($1, $2, $3) RETURNING *`,
-      [Author_ID, Author_Name, Total_books ?? null]
+      `INSERT INTO Author (Author_ID, Author_Name, Total_books, author_image_url) 
+       VALUES ($1, $2, $3, $4) RETURNING *`,
+      [Author_ID, Author_Name, Total_books ?? null, Author_Image_URL ?? null]
     );
     res.status(201).json({ success: true, data: result.rows[0] });
   } catch (error) {
@@ -43,3 +49,4 @@ export const createAuthor = async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+

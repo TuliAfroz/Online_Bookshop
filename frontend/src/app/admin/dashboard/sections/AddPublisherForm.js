@@ -7,6 +7,7 @@ export default function AddPublisherForm() {
     Publisher_ID: '',
     Publisher_Name: '',
     Phone_No: '',
+    Publisher_Img_Url: '', // ✅ added
   });
 
   const [message, setMessage] = useState('');
@@ -25,13 +26,19 @@ export default function AddPublisherForm() {
         Publisher_ID: parseInt(form.Publisher_ID),
         Publisher_Name: form.Publisher_Name.trim(),
         Phone_No: form.Phone_No.trim() || null,
+        Publisher_Img_Url: form.Publisher_Img_Url.trim() || null, // ✅ added
       }),
     });
 
     const result = await response.json();
     if (response.ok) {
       setMessage('✅ Publisher added successfully');
-      setForm({ Publisher_ID: '', Publisher_Name: '', Phone_No: '' });
+      setForm({
+        Publisher_ID: '',
+        Publisher_Name: '',
+        Phone_No: '',
+        Publisher_Img_Url: '', // ✅ reset this field
+      });
     } else {
       setMessage(`❌ Error: ${result.error || 'Something went wrong'}`);
     }
@@ -41,7 +48,7 @@ export default function AddPublisherForm() {
     <form
       onSubmit={handleSubmit}
       className="max-w-md mx-auto space-y-5 p-6 rounded-xl border border-gray-300"
-      style={{ marginTop: '40px' }} // optional top margin
+      style={{ marginTop: '40px' }}
     >
       <h2 className="text-2xl font-semibold mb-4 text-center">Add Publisher</h2>
 
@@ -71,6 +78,15 @@ export default function AddPublisherForm() {
         onChange={handleChange}
         className="border p-2 w-full rounded-xl"
       />
+      <input
+        type="text"
+        name="Publisher_Img_Url"
+        placeholder="Image URL (optional)"
+        value={form.Publisher_Img_Url}
+        onChange={handleChange}
+        className="border p-2 w-full rounded-xl"
+      />
+
       <button
         type="submit"
         className="bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-xl w-full transition"

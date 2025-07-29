@@ -139,8 +139,8 @@ export default function HomePage() {
       console.error('Failed to fetch books in stock:', err);
     }
   };
-  
-  
+
+
   // 👤 Fetch authors
   const fetchAuthors = async (page = 1) => {
     try {
@@ -166,71 +166,71 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 relative">
+    <div className="min-h-screen bg-blue-50 relative">
       {/* Login/Signup Dropdown */}
-<div className="absolute top-4 right-4 z-20">
-  <div className="relative">
-    <button
-      onClick={() => setShowDropdown(!showDropdown)}
-      className="bg-white text-slate-700 font-semibold px-4 py-2 rounded hover:bg-gray-200"
-    >
-      Login / Signup
-    </button>
-
-    {showDropdown && (
-      <div className="absolute right-0 mt-2 w-48 bg-white rounded shadow z-10 text-black p-2 space-y-2">
-        {/* Login submenu */}
-        <div className="group relative">
-          <button className="w-full text-left px-2 py-1 hover:bg-gray-100 rounded">
-            Login ▸
+      <div className="absolute top-4 right-4 z-20">
+        <div className="relative">
+          <button
+            onClick={() => setShowDropdown(!showDropdown)}
+            className="bg-white text-slate-700 font-semibold px-4 py-2 rounded hover:bg-gray-200"
+          >
+            Login / Signup
           </button>
-          <div className="absolute right-full top-0 w-40 bg-white shadow rounded hidden group-hover:block">
-            <button
-              className="block w-full text-left px-4 py-2 hover:bg-gray-100"
-              onClick={() => router.push('/admin/login')}
-            >
-              Admin
-            </button>
-            <button
-              className="block w-full text-left px-4 py-2 hover:bg-gray-100"
-              onClick={() => router.push('/customer/login')}
-            >
-              Customer
-            </button>
-            <button
-              className="block w-full text-left px-4 py-2 hover:bg-gray-100"
-              onClick={() => router.push('/publisher/login')}
-            >
-              Publisher
-            </button>
-          </div>
-        </div>
 
-        {/* Signup submenu */}
-        <div className="group relative">
-          <button className="w-full text-left px-2 py-1 hover:bg-gray-100 rounded">
-            Signup ▸
-          </button>
-          <div className="absolute right-full top-0 w-40 bg-white shadow rounded hidden group-hover:block">
-            <button
-              className="block w-full text-left px-4 py-2 hover:bg-gray-100"
-              onClick={() => router.push('/admin/signup')}
-            >
-              Admin
-            </button>
-            <button
-              className="block w-full text-left px-4 py-2 hover:bg-gray-100"
-              onClick={() => router.push('/customer/signup')}
-            >
-              Customer
-            </button>
+          {showDropdown && (
+            <div className="absolute right-0 mt-2 w-48 bg-white rounded shadow z-10 text-black p-2 space-y-2">
+              {/* Login submenu */}
+              <div className="group relative">
+                <button className="w-full text-left px-2 py-1 hover:bg-gray-100 rounded">
+                  Login ▸
+                </button>
+                <div className="absolute right-full top-0 w-40 bg-white shadow rounded hidden group-hover:block">
+                  <button
+                    className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                    onClick={() => router.push('/admin/login')}
+                  >
+                    Admin
+                  </button>
+                  <button
+                    className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                    onClick={() => router.push('/customer/login')}
+                  >
+                    Customer
+                  </button>
+                  <button
+                    className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                    onClick={() => router.push('/publisher/login')}
+                  >
+                    Publisher
+                  </button>
+                </div>
+              </div>
 
-          </div>
+              {/* Signup submenu */}
+              <div className="group relative">
+                <button className="w-full text-left px-2 py-1 hover:bg-gray-100 rounded">
+                  Signup ▸
+                </button>
+                <div className="absolute right-full top-0 w-40 bg-white shadow rounded hidden group-hover:block">
+                  <button
+                    className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                    onClick={() => router.push('/admin/signup')}
+                  >
+                    Admin
+                  </button>
+                  <button
+                    className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                    onClick={() => router.push('/customer/signup')}
+                  >
+                    Customer
+                  </button>
+
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
-    )}
-  </div>
-</div>
 
 
       {/* Search Bar & Sort Dropdown */}
@@ -260,30 +260,29 @@ export default function HomePage() {
 
       {/* Button Menu */}
       <div className="flex justify-center flex-wrap gap-2 mb-6">
-      {[
-  { label: 'Home', view: 'books', onClick: () => fetchBooks(1) },
-  { label: 'Authors', view: 'authors', onClick: () => fetchAuthors(1) },
-  { label: 'Publications', view: 'publications', onClick: () => fetchPublishers(1) },
-  { label: 'Categories', view: 'categories' },
-  { label: 'Books In Stock', view: 'books', onClick: () => fetchBooksInStock(1) },
-].map(({ label, view, onClick }) => (
-  <button
-    key={label}
-    onClick={() => {
-      setActiveView(view);
-      setCurrentPage(1);
-      setActiveAuthor(null);
-      setActivePublisher(null);
-      setInStockMode(false);
-      onClick?.();
-    }}
-    className={`bg-white text-gray-800 border border-gray-300 px-4 py-2 rounded-xl shadow hover:bg-gray-100 transition ${
-      activeView === view ? 'bg-gray-200' : ''
-    }`}
-  >
-    {label}
-  </button>
-))}
+        {[
+          { label: 'Home', view: 'books', onClick: () => fetchBooks(1) },
+          { label: 'Authors', view: 'authors', onClick: () => fetchAuthors(1) },
+          { label: 'Publications', view: 'publications', onClick: () => fetchPublishers(1) },
+          { label: 'Categories', view: 'categories' },
+          { label: 'Books In Stock', view: 'books', onClick: () => fetchBooksInStock(1) },
+        ].map(({ label, view, onClick }) => (
+          <button
+            key={label}
+            onClick={() => {
+              setActiveView(view);
+              setCurrentPage(1);
+              setActiveAuthor(null);
+              setActivePublisher(null);
+              setInStockMode(false);
+              onClick?.();
+            }}
+            className={`bg-white text-gray-800 border border-gray-300 px-4 py-2 rounded-xl shadow hover:bg-gray-100 transition ${activeView === view ? 'bg-gray-200' : ''
+              }`}
+          >
+            {label}
+          </button>
+        ))}
 
       </div>
 
@@ -363,52 +362,52 @@ export default function HomePage() {
       </div>
       {/* Categories view */}
       {activeView === 'categories' && categorySections.map((category) => {
-  const scrollRef = React.createRef();
+        const scrollRef = React.createRef();
 
-  const scrollLeft = () => {
-    if (scrollRef.current) scrollRef.current.scrollBy({ left: -400, behavior: 'smooth' });
-  };
+        const scrollLeft = () => {
+          if (scrollRef.current) scrollRef.current.scrollBy({ left: -400, behavior: 'smooth' });
+        };
 
-  const scrollRight = () => {
-    if (scrollRef.current) scrollRef.current.scrollBy({ left: 400, behavior: 'smooth' });
-  };
+        const scrollRight = () => {
+          if (scrollRef.current) scrollRef.current.scrollBy({ left: 400, behavior: 'smooth' });
+        };
 
-  return (
-    <div
-      key={category.category_id}
-      className="bg-white shadow-md rounded-xl p-6 mb-10 max-w-6xl mx-auto"
-    >
-      <h2 className="text-xl font-semibold mb-4">{category.category_name}</h2>
-      <div className="flex items-center">
-        <button onClick={scrollLeft} className="text-2xl px-3">←</button>
-        <div
-          ref={scrollRef}
-          className="flex overflow-x-auto space-x-4 scrollbar-hide px-4"
-        >
-          {category.books.map((book) => (
-            <Link href={`/book/${book.book_id}`} key={book.book_id}>
-              <div className="bg-gray-50 rounded-xl shadow hover:shadow-xl transform hover:scale-105 transition duration-300 ease-in-out p-4 cursor-pointer w-40 shrink-0">
-                {book.cover_image_url?.startsWith('http') && (
-                  <div className="w-full h-60 flex items-center justify-center bg-gray-100 rounded mb-2 overflow-hidden">
-                    <img
-                      src={book.cover_image_url}
-                      alt={book.title}
-                      className="h-full object-contain"
-                    />
-                  </div>
-                )}
-                <h3 className="font-bold text-sm truncate">{book.title}</h3>
-                <p className="text-xs text-gray-500 mb-1 truncate">{book.author_name}</p>
-                <p className="text-blue-600 font-bold text-sm">৳{book.price}</p>
+        return (
+          <div
+            key={category.category_id}
+            className="bg-white shadow-md rounded-xl p-6 mb-10 max-w-6xl mx-auto"
+          >
+            <h2 className="text-xl font-semibold mb-4">{category.category_name}</h2>
+            <div className="flex items-center">
+              <button onClick={scrollLeft} className="text-2xl px-3">←</button>
+              <div
+                ref={scrollRef}
+                className="flex overflow-x-auto space-x-4 scrollbar-hide px-4"
+              >
+                {category.books.map((book) => (
+                  <Link href={`/book/${book.book_id}`} key={book.book_id}>
+                    <div className="bg-gray-50 rounded-xl shadow hover:shadow-xl transform hover:scale-105 transition duration-300 ease-in-out p-4 cursor-pointer w-40 shrink-0">
+                      {book.cover_image_url?.startsWith('http') && (
+                        <div className="w-full h-60 flex items-center justify-center bg-gray-100 rounded mb-2 overflow-hidden">
+                          <img
+                            src={book.cover_image_url}
+                            alt={book.title}
+                            className="h-full object-contain"
+                          />
+                        </div>
+                      )}
+                      <h3 className="font-bold text-sm truncate">{book.title}</h3>
+                      <p className="text-xs text-gray-500 mb-1 truncate">{book.author_name}</p>
+                      <p className="text-blue-600 font-bold text-sm">৳{book.price}</p>
+                    </div>
+                  </Link>
+                ))}
               </div>
-            </Link>
-          ))}
-        </div>
-        <button onClick={scrollRight} className="text-2xl px-3">→</button>
-      </div>
-    </div>
-  );
-})}
+              <button onClick={scrollRight} className="text-2xl px-3">→</button>
+            </div>
+          </div>
+        );
+      })}
 
       {/* Pagination for books, authors, publishers */}
       {(activeView === 'books' || activeView === 'authors' || activeView === 'publications') && (

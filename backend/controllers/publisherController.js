@@ -27,23 +27,27 @@ export const getAllPublishers = async (req, res) => {
 
 // Create new publisher
 export const createPublisher = async (req, res) => {
-  const { Publisher_ID,Publisher_Name, Phone_No } = req.body;
+  const { Publisher_ID, Publisher_Name, Phone_No, Publisher_Img_Url } = req.body;
 
-  if (!Publisher_Name || !Publisher_ID ) {
+  if (!Publisher_Name || !Publisher_ID) {
     return res.status(400).json({ error: 'Publisher_Name and Publisher_ID are required' });
   }
 
   try {
     const result = await pool.query(
-      `INSERT INTO Publisher (Publisher_ID, Publisher_Name, Phone_No) VALUES ($1, $2, $3) RETURNING *`,
-      [Publisher_ID, Publisher_Name, Phone_No || null]
+      `INSERT INTO Publisher (Publisher_ID, Publisher_Name, Phone_No, Publisher_Img_Url)
+       VALUES ($1, $2, $3, $4)
+       RETURNING *`,
+      [Publisher_ID, Publisher_Name, Phone_No || null, Publisher_Img_Url || null]
     );
+
     res.status(201).json({ success: true, data: result.rows[0] });
   } catch (error) {
     console.error('Error creating publisher:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+
 
 export const getPublisherProfile = async (req, res) => {
   const { publisherId } = req.params;

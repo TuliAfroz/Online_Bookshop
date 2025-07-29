@@ -7,6 +7,9 @@ export default function AddAuthorForm() {
   const [authorName, setAuthorName] = useState('');
   const [totalBooks, setTotalBooks] = useState('');
   const [message, setMessage] = useState(null);
+  const [authorImageUrl, setAuthorImageUrl] = useState('');
+
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -24,6 +27,7 @@ export default function AddAuthorForm() {
           Author_ID: parseInt(authorId),
           Author_Name: authorName,
           Total_Books: Number(totalBooks.trim()) || 0,
+          Author_Image_URL: authorImageUrl.trim(),
         }),
       });
 
@@ -34,6 +38,8 @@ export default function AddAuthorForm() {
         setAuthorId('');
         setAuthorName('');
         setTotalBooks('');
+        setAuthorImageUrl('');
+
       } else {
         setMessage({ type: 'error', text: data.error || 'Failed to add author.' });
       }
@@ -78,6 +84,15 @@ export default function AddAuthorForm() {
           className="w-full p-2 border border-gray-300 rounded-xl"
           value={authorName}
           onChange={(e) => setAuthorName(e.target.value)}
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium mb-1">Image URL (optional)</label>
+        <input
+          type="text"
+          className="w-full p-2 border border-gray-300 rounded-xl"
+          value={authorImageUrl}
+          onChange={(e) => setAuthorImageUrl(e.target.value)}
         />
       </div>
 

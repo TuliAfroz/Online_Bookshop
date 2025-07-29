@@ -48,7 +48,7 @@ export default function BookDetailPage() {
   if (!book) return <div className="p-10">Loading...</div>;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-blue-50 p-6">
       {/* Book Details */}
       <div className="max-w-4xl mx-auto bg-white p-6 rounded-xl shadow-lg grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Book Cover */}

@@ -212,7 +212,7 @@ export default function CustomerCartPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white-50">
+    <div className="min-h-screen bg-blue-50">
       {/* Header */}
       <div className="flex justify-end items-center gap-4 px-6 pt-4">
         <button

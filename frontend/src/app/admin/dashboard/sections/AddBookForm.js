@@ -4,6 +4,7 @@ import { useState } from 'react';
 
 export default function AddBookForm() {
   const [formData, setFormData] = useState({
+    Book_id: '',
     Title: '',
     Description: '',
     Cover_Image_URL: '',
