@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { getPublisherIdFromToken } from '../../utils/getPublisherId';
+
 export default function AddBookForm() {
   const [formData, setFormData] = useState({
     Book_ID: '',
@@ -15,8 +16,8 @@ export default function AddBookForm() {
   const [authors, setAuthors] = useState([]);
   const [message, setMessage] = useState('');
 
+  // Fetch authors on load
   useEffect(() => {
-    // Fetch authors from backend
     async function fetchAuthors() {
       try {
         const res = await fetch('http://localhost:3000/api/authors');
@@ -29,13 +30,13 @@ export default function AddBookForm() {
     fetchAuthors();
   }, []);
 
-
-
+  // Handle form field changes
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
 
+  // Submit handler
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage('');
@@ -47,15 +48,32 @@ export default function AddBookForm() {
       return;
     }
 
+    // Find Author_ID from selected Author_Name
+    const selectedAuthor = authors.find(
+      (author) => author.author_name === formData.Author_Name
+    );
+
+   if (!selectedAuthor) {
+  // Redirect to Add Author page
+  setMessage(`Author "${formData.Author_Name}" not found. Redirecting to Add Author page...`);
+  setTimeout(() => {
+    window.location.href = '/publisher/dashboard?tab=add-author';
+  }, 2000);
+  return;
+}
+
+    // Prepare payload with IDs and optional fields
+    const payload = {
+      Book_ID: formData.Book_ID,
+      Title: formData.Title,
+      Description: formData.Description || null,
+      Cover_Image_URL: formData.Cover_Image_URL || null,
+      Author_ID: selectedAuthor.author_id,
+      Publisher_ID: publisherId,
+      Price: formData.Price,
+    };
+
     try {
-
-      // Prepare payload with Publisher_ID added
-      const payload = {
-        ...formData,
-        Publisher_ID: publisherId,
-      };
-
-
       const res = await fetch('http://localhost:3000/api/books', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -63,6 +81,7 @@ export default function AddBookForm() {
       });
 
       const data = await res.json();
+
       if (data.redirect) {
         setMessage(data.message || 'Redirecting...');
         setTimeout(() => {
@@ -77,7 +96,7 @@ export default function AddBookForm() {
       }
 
       setMessage('✅ Book added successfully!');
-
+      // Reset form
       setFormData({
         Book_ID: '',
         Title: '',
@@ -121,7 +140,7 @@ export default function AddBookForm() {
       />
       <textarea
         name="Description"
-        placeholder="Description"
+        placeholder="Description (optional)"
         value={formData.Description}
         onChange={handleChange}
         className="w-full p-2 border rounded"
@@ -129,13 +148,15 @@ export default function AddBookForm() {
       <input
         name="Cover_Image_URL"
         type="url"
-        placeholder="Cover Image URL"
+        placeholder="Cover Image URL (optional)"
         value={formData.Cover_Image_URL}
         onChange={handleChange}
         className="w-full p-2 border rounded"
       />
 
-      <label htmlFor="Author_Name" className="block font-semibold"></label>
+      <label htmlFor="Author_Name" className="block font-semibold">
+        Select Author
+      </label>
       <input
         list="authors"
         name="Author_Name"
@@ -147,7 +168,7 @@ export default function AddBookForm() {
       />
       <datalist id="authors">
         {authors.map(author => (
-          <option key={author.author_id} value={ author.author_name } />
+          <option key={author.author_id} value={author.author_name} />
         ))}
       </datalist>
 

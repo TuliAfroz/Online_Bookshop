@@ -94,7 +94,7 @@ export const createBook = async (req, res) => {
 
   // Remove Category_ID from required fields
   if (!Book_ID || !Title || !Author_ID || !Publisher_ID || !Price) {
-    return res.status(400).json({ error: 'All fields except category are required' });
+    return res.status(400).json({ error: 'All fields are required' });
   }
 
   try {
@@ -134,7 +134,7 @@ export const createBook = async (req, res) => {
       `INSERT INTO Book (Book_ID, Title, Description, Author_ID, Publisher_ID, Price, Cover_Image_URL)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING *`,
-      [Book_ID, Title, Description, Author_ID, Publisher_ID, Price, Cover_Image_URL]
+      [Book_ID, Title, Description || null, Author_ID, Publisher_ID, Price, Cover_Image_URL || null]
     );
 
     // No BookCategory insertion
