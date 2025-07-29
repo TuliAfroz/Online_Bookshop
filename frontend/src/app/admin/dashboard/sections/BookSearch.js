@@ -3,20 +3,28 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
-export default function BookSearch() {
+export default function BookSearch({ sortOption: parentSortOption }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortOption, setSortOption] = useState(parentSortOption || ''); // local sort state
 
   const booksPerPage = 18;
+
+  // Sync with parent sortOption if provided
+  useEffect(() => {
+    if (parentSortOption !== undefined) setSortOption(parentSortOption);
+  }, [parentSortOption]);
 
   const fetchBooks = async () => {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('http://localhost:3000/api/books/search');
+      let url = 'http://localhost:3000/api/books/search';
+      if (sortOption) url += `?sort=${sortOption}`;
+      const res = await fetch(url);
       const contentType = res.headers.get('content-type');
       if (!contentType?.includes('application/json')) throw new Error('Invalid response format.');
       const data = await res.json();
@@ -36,7 +44,9 @@ export default function BookSearch() {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch(`http://localhost:3000/api/books/search?query=${encodeURIComponent(searchTerm)}`);
+      let url = `http://localhost:3000/api/books/search?query=${encodeURIComponent(searchTerm)}`;
+      if (sortOption) url += `&sort=${sortOption}`;
+      const res = await fetch(url);
       const contentType = res.headers.get('content-type');
       if (!contentType?.includes('application/json')) throw new Error('Invalid response format.');
       const data = await res.json();
@@ -51,11 +61,11 @@ export default function BookSearch() {
     }
   };
 
-  useEffect(() => { fetchBooks(); }, []);
+  useEffect(() => { fetchBooks(); }, [sortOption]);
   useEffect(() => {
     const delay = setTimeout(() => handleSearch(), 300);
     return () => clearTimeout(delay);
-  }, [searchTerm]);
+  }, [searchTerm, sortOption]);
 
   const indexOfLastBook = currentPage * booksPerPage;
   const indexOfFirstBook = indexOfLastBook - booksPerPage;
@@ -83,6 +93,20 @@ export default function BookSearch() {
         >
           Search
         </button>
+        {/* --- SORT DROPDOWN --- */}
+        <select
+          className="p-2 border border-gray-300 rounded-xl"
+          value={sortOption}
+          onChange={e => setSortOption(e.target.value)}
+        >
+          <option value="">Default</option>
+          <option value="price_asc">Price: Low to High</option>
+          <option value="price_desc">Price: High to Low</option>
+          <option value="rating_desc">Rating: High to Low</option>
+          <option value="rating_asc">Rating: Low to High</option>
+          <option value="name_asc">Name: A-Z</option>
+          <option value="name_desc">Name: Z-A</option>
+        </select>
       </div>
 
       {loading && <p className="text-center">Searching...</p>}
@@ -120,54 +144,48 @@ export default function BookSearch() {
         ))}
       </div>
 
-          {/* Pagination */}
-          <div className="flex justify-center mt-10 space-x-2">
-            <button
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage(currentPage - 1)}
-              className="px-3 py-1 border rounded disabled:opacity-50"
-            >
-              &lt;
+      {/* Pagination */}
+      <div className="flex justify-center mt-10 space-x-2">
+        <button
+          disabled={currentPage === 1}
+          onClick={goToPrevPage}
+          className="px-3 py-1 border rounded disabled:opacity-50"
+        >
+          &lt;
+        </button>
+        {currentPage > 2 && (
+          <>
+            <button onClick={() => setCurrentPage(1)} className="px-3 py-1 border rounded">1</button>
+            {currentPage > 3 && <span className="px-2">...</span>}
+          </>
+        )}
+        {currentPage > 1 && (
+          <button onClick={goToPrevPage} className="px-3 py-1 border rounded">
+            {currentPage - 1}
+          </button>
+        )}
+        <span className="px-3 py-1 border rounded bg-slate-700 text-white">{currentPage}</span>
+        {currentPage < totalPages && (
+          <button onClick={goToNextPage} className="px-3 py-1 border rounded">
+            {currentPage + 1}
+          </button>
+        )}
+        {currentPage < totalPages - 1 && (
+          <>
+            {currentPage < totalPages - 2 && <span className="px-2">...</span>}
+            <button onClick={() => setCurrentPage(totalPages)} className="px-3 py-1 border rounded">
+              {totalPages}
             </button>
-
-            {currentPage > 2 && (
-              <>
-                <button onClick={() => setCurrentPage(1)} className="px-3 py-1 border rounded">1</button>
-                {currentPage > 3 && <span className="px-2">...</span>}
-              </>
-            )}
-
-            {currentPage > 1 && (
-              <button onClick={() => setCurrentPage(currentPage - 1)} className="px-3 py-1 border rounded">
-                {currentPage - 1}
-              </button>
-            )}
-
-            <span className="px-3 py-1 border rounded bg-slate-700 text-white">{currentPage}</span>
-
-            {currentPage < totalPages && (
-              <button onClick={() => setCurrentPage(currentPage + 1)} className="px-3 py-1 border rounded">
-                {currentPage + 1}
-              </button>
-            )}
-
-            {currentPage < totalPages - 1 && (
-              <>
-                {currentPage < totalPages - 2 && <span className="px-2">...</span>}
-                <button onClick={() => setCurrentPage(totalPages)} className="px-3 py-1 border rounded">
-                  {totalPages}
-                </button>
-              </>
-            )}
-
-            <button
-              disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage(currentPage + 1)}
-              className="px-3 py-1 border rounded disabled:opacity-50"
-            >
-              &gt;
-            </button>
-          </div>
+          </>
+        )}
+        <button
+          disabled={currentPage === totalPages}
+          onClick={goToNextPage}
+          className="px-3 py-1 border rounded disabled:opacity-50"
+        >
+          &gt;
+        </button>
+      </div>
     </div>
   );
 }

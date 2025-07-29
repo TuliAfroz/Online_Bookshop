@@ -13,39 +13,39 @@ export default function HomePage() {
   const [books, setBooks] = useState([]);
   const [filteredBooks, setFilteredBooks] = useState([]);
   const [authors, setAuthors] = useState([]);
-  const [publishers, setPublishers] = useState([]);       // NEW: publishers state
+  const [publishers, setPublishers] = useState([]);
   const [activeAuthor, setActiveAuthor] = useState(null);
-  const [activePublisher, setActivePublisher] = useState(null); // NEW: activePublisher state
+  const [activePublisher, setActivePublisher] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [activeView, setActiveView] = useState('books');
   const [inStockMode, setInStockMode] = useState(false);
   const [categorySections, setCategorySections] = useState([]);
+  const [sortOption, setSortOption] = useState(''); // <-- ADD THIS
 
   const booksPerPage = 18;
 
-  // 🌐 Fetch data on page load or when activeView/currentPage changes
+  // 🌐 Fetch data on page load or when activeView/currentPage/sortOption changes
   useEffect(() => {
     if (activeView === 'categories') {
-      fetchCategoriesWithBooks(); // ✅ Now this will run correctly
+      fetchCategoriesWithBooks();
     } else if (activeView === 'books') {
       if (inStockMode) {
-        fetchBooksInStock(currentPage);
+        fetchBooksInStock(currentPage, sortOption); // <-- PASS sortOption
       } else if (activeAuthor !== null) {
         fetchBooksByAuthor(activeAuthor);
       } else if (activePublisher !== null) {
         fetchBooksByPublisher(activePublisher);
       } else {
-        fetchBooks(currentPage);
+        fetchBooks(currentPage, sortOption); // <-- PASS sortOption
       }
     } else if (activeView === 'authors') {
       fetchAuthors(currentPage);
     } else if (activeView === 'publications') {
       fetchPublishers(currentPage);
     }
-  }, [activeView, currentPage, activeAuthor, activePublisher, inStockMode]);
-  
+  }, [activeView, currentPage, activeAuthor, activePublisher, inStockMode, sortOption]); // <-- ADD sortOption
 
   // 🔍 Search functionality (only searches books)
   useEffect(() => {
@@ -54,18 +54,22 @@ export default function HomePage() {
         setFilteredBooks(books);
         return;
       }
-      fetch(`http://localhost:3000/api/books/search?query=${encodeURIComponent(searchQuery)}`)
+      let url = `http://localhost:3000/api/books/search?query=${encodeURIComponent(searchQuery)}`;
+      if (sortOption) url += `&sort=${sortOption}`; // <-- ADD SORT TO SEARCH
+      fetch(url)
         .then(res => res.json())
         .then(data => setFilteredBooks(data.data || []))
         .catch(err => console.error('Search error:', err));
     }, 300);
     return () => clearTimeout(delayDebounce);
-  }, [searchQuery, books]);
+  }, [searchQuery, books, sortOption]); // <-- ADD sortOption
 
   // 📚 Fetch books (all)
-  const fetchBooks = async (page = 1) => {
+  const fetchBooks = async (page = 1, sort = '') => {
     try {
-      const res = await fetch(`http://localhost:3000/api/books?page=${page}&limit=${booksPerPage}`);
+      let url = `http://localhost:3000/api/books?page=${page}&limit=${booksPerPage}`;
+      if (sort) url += `&sort=${sort}`; // <-- ADD SORT PARAM
+      const res = await fetch(url);
       const data = await res.json();
       setBooks(data.data || []);
       setFilteredBooks(data.data || []);
@@ -116,9 +120,12 @@ export default function HomePage() {
       console.error('Failed to fetch books by publisher:', err);
     }
   };
-  const fetchBooksInStock = async (page = 1) => {
+  // Update fetchBooksInStock to accept sort
+  const fetchBooksInStock = async (page = 1, sort = sortOption) => {
     try {
-      const res = await fetch(`http://localhost:3000/api/books/in-stock?page=${page}&limit=${booksPerPage}`);
+      let url = `http://localhost:3000/api/books/in-stock?page=${page}&limit=${booksPerPage}`;
+      if (sort) url += `&sort=${sort}`; // <-- ADD SORT PARAM
+      const res = await fetch(url);
       const data = await res.json();
       setBooks(data.data || []);
       setFilteredBooks(data.data || []);
@@ -226,8 +233,8 @@ export default function HomePage() {
 </div>
 
 
-      {/* Search Bar */}
-      <div className="flex justify-center p-4 mt-8">
+      {/* Search Bar & Sort Dropdown */}
+      <div className="flex justify-center items-center gap-4 p-4 mt-8">
         <input
           type="text"
           placeholder="Search by title, author, category or publisher"
@@ -235,6 +242,20 @@ export default function HomePage() {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
+        {/* --- SORT DROPDOWN --- */}
+        <select
+          className="p-3 border border-gray-300 rounded-xl"
+          value={sortOption}
+          onChange={e => setSortOption(e.target.value)}
+        >
+          <option value="">Default</option>
+          <option value="price_asc">Price: Low to High</option>
+          <option value="price_desc">Price: High to Low</option>
+          <option value="rating_desc">Rating: High to Low</option>
+          <option value="rating_asc">Rating: Low to High</option>
+          <option value="name_asc">Name: A-Z</option>
+          <option value="name_desc">Name: Z-A</option>
+        </select>
       </div>
 
       {/* Button Menu */}

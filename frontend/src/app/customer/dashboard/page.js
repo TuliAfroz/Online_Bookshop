@@ -13,6 +13,7 @@ export default function CustomerDashboard() {
   const [filteredBooks, setFilteredBooks] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
+  const [sortOption, setSortOption] = useState(''); // <-- ADD THIS
 
   const [currentPage, setCurrentPage] = useState(1);
   const booksPerPage = 18;
@@ -45,7 +46,7 @@ export default function CustomerDashboard() {
 
   useEffect(() => {
     fetchBooks();
-  }, []);
+  }, [sortOption]); // <-- ADD sortOption
 
   useEffect(() => {
     const delay = setTimeout(() => {
@@ -53,8 +54,9 @@ export default function CustomerDashboard() {
         setFilteredBooks(books);
         return;
       }
-
-      fetch(`http://localhost:3000/api/books/search?query=${encodeURIComponent(searchQuery)}`)
+      let url = `http://localhost:3000/api/books/search?query=${encodeURIComponent(searchQuery)}`;
+      if (sortOption) url += `&sort=${sortOption}`; // <-- ADD SORT TO SEARCH
+      fetch(url)
         .then(res => res.json())
         .then(data => {
           setFilteredBooks(data.data || []);
@@ -64,10 +66,12 @@ export default function CustomerDashboard() {
     }, 300);
 
     return () => clearTimeout(delay);
-  }, [searchQuery]);
+  }, [searchQuery, books, sortOption]); // <-- ADD sortOption
 
   const fetchBooks = async () => {
-    const res = await fetch('http://localhost:3000/api/books?page=1&limit=1000');
+    let url = 'http://localhost:3000/api/books?page=1&limit=1000';
+    if (sortOption) url += `&sort=${sortOption}`; // <-- ADD SORT PARAM
+    const res = await fetch(url);
     const data = await res.json();
     setBooks(data.data || []);
     setFilteredBooks(data.data || []);
@@ -184,8 +188,8 @@ export default function CustomerDashboard() {
       </div>
 
 
-      {/* Search */}
-      <div className="flex justify-center p-4">
+      {/* Search & Sort */}
+      <div className="flex justify-center items-center gap-4 p-4">
         <input
           type="text"
           placeholder="Search by title, author, category or publisher"
@@ -193,6 +197,20 @@ export default function CustomerDashboard() {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
+        {/* --- SORT DROPDOWN --- */}
+        <select
+          className="p-3 border border-gray-300 rounded-xl"
+          value={sortOption}
+          onChange={e => setSortOption(e.target.value)}
+        >
+          <option value="">Default</option>
+          <option value="price_asc">Price: Low to High</option>
+          <option value="price_desc">Price: High to Low</option>
+          <option value="rating_desc">Rating: High to Low</option>
+          <option value="rating_asc">Rating: Low to High</option>
+          <option value="name_asc">Name: A-Z</option>
+          <option value="name_desc">Name: Z-A</option>
+        </select>
       </div>
 
       {/* Book Grid */}

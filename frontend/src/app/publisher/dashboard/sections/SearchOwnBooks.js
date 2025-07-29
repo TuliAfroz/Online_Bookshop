@@ -10,10 +10,11 @@ export default function SearchOwnBooks() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortOption, setSortOption] = useState(''); // <-- ADD THIS
 
   const booksPerPage = 18;
 
-  const fetchBooks = async (query = '') => {
+  const fetchBooks = async (query = '', sort = '') => {
     const publisherId = getPublisherIdFromToken();
     if (!publisherId) {
       setError('Unauthorized: No publisher ID found.');
@@ -25,6 +26,7 @@ export default function SearchOwnBooks() {
     try {
       const url = new URL(`http://localhost:3000/api/books/publisher/${publisherId}`);
       if (query) url.searchParams.append('query', query);
+      if (sort) url.searchParams.append('sort', sort); // <-- ADD SORT PARAM
 
       const res = await fetch(url.toString());
       const contentType = res.headers.get('content-type');
@@ -44,17 +46,19 @@ export default function SearchOwnBooks() {
   };
 
   const handleSearch = () => {
-    fetchBooks(searchTerm.trim());
+    fetchBooks(searchTerm.trim(), sortOption); // <-- PASS sortOption
   };
 
+  // Fetch books on mount and when sortOption changes
   useEffect(() => {
-    fetchBooks();
-  }, []);
+    fetchBooks('', sortOption); // <-- PASS sortOption
+  }, [sortOption]);
 
+  // Debounced search
   useEffect(() => {
     const delay = setTimeout(() => handleSearch(), 300);
     return () => clearTimeout(delay);
-  }, [searchTerm]);
+  }, [searchTerm, sortOption]);
 
   // Pagination logic for current page slice
   const indexOfLastBook = currentPage * booksPerPage;
@@ -80,6 +84,20 @@ export default function SearchOwnBooks() {
         >
           Search
         </button>
+        {/* --- SORT DROPDOWN --- */}
+        <select
+          className="p-2 border border-gray-300 rounded-xl"
+          value={sortOption}
+          onChange={e => setSortOption(e.target.value)}
+        >
+          <option value="">Default</option>
+          <option value="price_asc">Price: Low to High</option>
+          <option value="price_desc">Price: High to Low</option>
+          <option value="rating_desc">Rating: High to Low</option>
+          <option value="rating_asc">Rating: Low to High</option>
+          <option value="name_asc">Name: A-Z</option>
+          <option value="name_desc">Name: Z-A</option>
+        </select>
       </div>
 
       {loading && <p className="text-center">Loading books...</p>}

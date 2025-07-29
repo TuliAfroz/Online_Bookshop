@@ -1,7 +1,8 @@
 import pool from '../config/db.js';
 
+// --- getAllBooks with sorting support ---
 export const getAllBooks = async(req, res) => {
-  const { publisher_id , page = 1, limit = 20 } = req.query;
+  const { publisher_id, page = 1, limit = 20, sort } = req.query;
 
   try {
     const offset = (parseInt(page) - 1) * parseInt(limit);
@@ -17,7 +18,6 @@ export const getAllBooks = async(req, res) => {
 
     const countResult = await pool.query(countQuery, countParams);
     const total = parseInt(countResult.rows[0].total);
-
 
     let query = `
       SELECT 
@@ -41,9 +41,33 @@ export const getAllBooks = async(req, res) => {
 
     query += `
       GROUP BY b.book_id, a.author_name
-      ORDER BY b.book_id ASC
-      LIMIT $${queryParams.length + 1} OFFSET $${queryParams.length + 2}
     `;
+
+    // --- Sorting logic ---
+    let orderBy = 'b.book_id ASC'; // Default
+    switch (sort) {
+      case 'price_asc':
+        orderBy = 'b.price ASC';
+        break;
+      case 'price_desc':
+        orderBy = 'b.price DESC';
+        break;
+      case 'rating_asc':
+        orderBy = 'average_rating ASC';
+        break;
+      case 'rating_desc':
+        orderBy = 'average_rating DESC';
+        break;
+      case 'name_asc':
+        orderBy = 'b.title ASC';
+        break;
+      case 'name_desc':
+        orderBy = 'b.title DESC';
+        break;
+      default:
+        orderBy = 'b.book_id ASC';
+    }
+    query += ` ORDER BY ${orderBy} LIMIT $${queryParams.length + 1} OFFSET $${queryParams.length + 2}`;
     queryParams.push(parseInt(limit), offset);
 
     const result = await pool.query(query, queryParams);
@@ -299,52 +323,70 @@ export const updateInventory = async (req, res) => {
 };
 
 
+// --- searchBooks with sorting support ---
 export const searchBooks = async (req, res) => {
-  const { query } = req.query;
+  const { query: searchQuery, sort } = req.query;
 
   try {
     let result;
-    if (!query) {
+    let sql = `
+      SELECT 
+        b.book_id,
+        b.title,
+        a.author_name,
+        b.price,
+        b.cover_image_url,
+        COALESCE(AVG(r.rating), 0) AS average_rating
+      FROM book b
+      LEFT JOIN author a ON b.author_id = a.author_id
+      LEFT JOIN bookcategory bc ON b.book_id = bc.book_id
+      LEFT JOIN category c ON bc.category_id = c.category_id
+      LEFT JOIN review r ON b.book_id = r.book_id
+    `;
+    let params = [];
+
+    if (!searchQuery) {
       // No query means fetch all books
-      result = await pool.query(`
-        SELECT 
-          b.book_id,
-          b.title,
-          a.author_name,
-          b.price,
-          b.cover_image_url,
-          COALESCE(AVG(r.rating), 0) AS average_rating
-        FROM book b
-        LEFT JOIN author a ON b.author_id = a.author_id
-        LEFT JOIN bookcategory bc ON b.book_id = bc.book_id
-        LEFT JOIN category c ON bc.category_id = c.category_id
-        LEFT JOIN review r ON b.book_id = r.book_id
-        GROUP BY b.book_id, b.title, a.author_name, b.price, b.cover_image_url
-        ORDER BY b.title ASC
-      `);
+      sql += ` GROUP BY b.book_id, b.title, a.author_name, b.price, b.cover_image_url`;
     } else {
       // Search with the query
-      result = await pool.query(`
-        SELECT 
-          b.book_id,
-          b.title,
-          a.author_name,
-          b.price,
-          b.cover_image_url,
-          COALESCE(AVG(r.rating), 0) AS average_rating
-        FROM book b
-        LEFT JOIN author a ON b.author_id = a.author_id
-        LEFT JOIN bookcategory bc ON b.book_id = bc.book_id
-        LEFT JOIN category c ON bc.category_id = c.category_id
-        LEFT JOIN review r ON b.book_id = r.book_id
+      sql += `
         WHERE
           LOWER(b.title) LIKE LOWER($1)
           OR LOWER(a.author_name) LIKE LOWER($1)
           OR LOWER(c.category_name) LIKE LOWER($1)
         GROUP BY b.book_id, b.title, a.author_name, b.price, b.cover_image_url
-        ORDER BY b.title ASC
-      `, [`%${query}%`]);
+      `;
+      params.push(`%${searchQuery}%`);
     }
+
+    // --- Sorting logic ---
+    let orderBy = 'b.title ASC'; // Default
+    switch (sort) {
+      case 'price_asc':
+        orderBy = 'b.price ASC';
+        break;
+      case 'price_desc':
+        orderBy = 'b.price DESC';
+        break;
+      case 'rating_asc':
+        orderBy = 'average_rating ASC';
+        break;
+      case 'rating_desc':
+        orderBy = 'average_rating DESC';
+        break;
+      case 'name_asc':
+        orderBy = 'b.title ASC';
+        break;
+      case 'name_desc':
+        orderBy = 'b.title DESC';
+        break;
+      default:
+        orderBy = 'b.title ASC';
+    }
+    sql += ` ORDER BY ${orderBy}`;
+
+    result = await pool.query(sql, params);
 
     res.status(200).json({ success: true, data: result.rows });
   } catch (error) {
@@ -373,14 +415,14 @@ export const getBooksByAuthor = async (req, res) => {
 export const getBooksByPublisher = async (req, res) => {
   try {
     const { publisherId } = req.params;
-    const { query } = req.query;
+    const { query, sort } = req.query; // <-- include sort
 
     const publisherIdNum = parseInt(publisherId, 10);
     if (isNaN(publisherIdNum)) {
       return res.status(400).json({ error: 'Invalid publisherId' });
     }
 
-    console.log('Fetching books for publisherId:', publisherIdNum, 'with search query:', query);
+    console.log('Fetching books for publisherId:', publisherIdNum, 'with search query:', query, 'and sort:', sort);
 
     let sql = `
       SELECT 
@@ -413,8 +455,33 @@ export const getBooksByPublisher = async (req, res) => {
 
     sql += `
       GROUP BY b.book_id, b.title, a.author_name, b.price, b.cover_image_url
-      ORDER BY b.title ASC
     `;
+
+    // --- Sorting logic ---
+    let orderBy = 'b.title ASC'; // Default
+    switch (sort) {
+      case 'price_asc':
+        orderBy = 'b.price ASC';
+        break;
+      case 'price_desc':
+        orderBy = 'b.price DESC';
+        break;
+      case 'rating_asc':
+        orderBy = 'average_rating ASC';
+        break;
+      case 'rating_desc':
+        orderBy = 'average_rating DESC';
+        break;
+      case 'name_asc':
+        orderBy = 'b.title ASC';
+        break;
+      case 'name_desc':
+        orderBy = 'b.title DESC';
+        break;
+      default:
+        orderBy = 'b.title ASC';
+    }
+    sql += ` ORDER BY ${orderBy}`;
 
     const result = await pool.query(sql, params);
 
@@ -434,6 +501,7 @@ export const getBooksInStock = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 18;
     const offset = (page - 1) * limit;
+    const { sort } = req.query; // <-- ADD THIS
 
     // First get total count of in-stock books
     const countResult = await pool.query(`
@@ -444,13 +512,32 @@ export const getBooksInStock = async (req, res) => {
     `);
     const total = parseInt(countResult.rows[0].total);
 
+    // --- Sorting logic ---
+    let orderBy = 'b.book_id ASC'; // Default
+    switch (sort) {
+      case 'price_asc':
+        orderBy = 'b.price ASC';
+        break;
+      case 'price_desc':
+        orderBy = 'b.price DESC';
+        break;
+      case 'name_asc':
+        orderBy = 'b.title ASC';
+        break;
+      case 'name_desc':
+        orderBy = 'b.title DESC';
+        break;
+      default:
+        orderBy = 'b.book_id ASC';
+    }
+
     // Then get paginated books
     const result = await pool.query(`
       SELECT b.*, i.quantity AS stock_quantity
       FROM book b
       JOIN inventory i ON b.book_id = i.book_id
       WHERE i.quantity > 0
-      ORDER BY b.book_id ASC
+      ORDER BY ${orderBy}
       LIMIT $1 OFFSET $2
     `, [limit, offset]);
 
