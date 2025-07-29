@@ -166,7 +166,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 relative">
+    <div className="min-h-screen bg-blue-50 relative">
       {/* Login/Signup Dropdown */}
       <div className="absolute top-4 right-4 z-20">
         <div className="relative">

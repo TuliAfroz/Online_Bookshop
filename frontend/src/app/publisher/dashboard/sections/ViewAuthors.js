@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from 'react';
 
-export default function AuthorList() {
+export default function ViewAuthors() {
   const [authors, setAuthors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-
+  
   useEffect(() => {
     setLoading(true);
     fetch(`http://localhost:3000/api/authors?page=${currentPage}`)

@@ -1,65 +1,40 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { getPublisherIdFromToken } from '../../utils/getPublisherId';
+import { useState } from 'react';
+
 export default function AddBookForm() {
   const [formData, setFormData] = useState({
-    Book_ID: '',
+    Book_id: '',
     Title: '',
     Description: '',
     Cover_Image_URL: '',
-    Author_Name: '',
+    Author_ID: '',
+    Publisher_ID: '',
+    Category_ID: '',
     Price: '',
   });
 
-  const [authors, setAuthors] = useState([]);
   const [message, setMessage] = useState('');
-
-  useEffect(() => {
-    // Fetch authors from backend
-    async function fetchAuthors() {
-      try {
-        const res = await fetch('http://localhost:3000/api/authors');
-        const data = await res.json();
-        if (data.success) setAuthors(data.data);
-      } catch (error) {
-        console.error('Error fetching authors:', error);
-      }
-    }
-    fetchAuthors();
-  }, []);
-
-
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+
+    if (name === 'Category_ID') {
+      setFormData({ ...formData, [name]: value.split(',').map(id => parseInt(id.trim())) });
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage('');
 
-    // Get publisher ID from token
-    const publisherId = getPublisherIdFromToken();
-    if (!publisherId) {
-      setMessage('Publisher ID not found. Please login again.');
-      return;
-    }
-
     try {
-
-      // Prepare payload with Publisher_ID added
-      const payload = {
-        ...formData,
-        Publisher_ID: publisherId,
-      };
-
-
-      const res = await fetch('http://localhost:3000/api/books', {
+      const res = await fetch('/api/books', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(formData),
       });
 
       const data = await res.json();
@@ -77,16 +52,6 @@ export default function AddBookForm() {
       }
 
       setMessage('✅ Book added successfully!');
-
-      setFormData({
-        Book_ID: '',
-        Title: '',
-        Description: '',
-        Cover_Image_URL: '',
-        Author_Name: '',
-        Price: '',
-      });
-
     } catch (error) {
       console.error('Error submitting form:', error);
       setMessage('Something went wrong.');
@@ -101,15 +66,6 @@ export default function AddBookForm() {
       <h2 className="text-2xl font-bold mb-4 text-center">Add New Book</h2>
       {message && <p className="text-sm text-red-600 text-center">{message}</p>}
 
-      <input
-        name="Book_ID"
-        type="number"
-        placeholder="ISBN"
-        value={formData.Book_ID}
-        onChange={handleChange}
-        className="w-full p-2 border rounded"
-        required
-      />
       <input
         name="Title"
         type="text"
@@ -134,23 +90,33 @@ export default function AddBookForm() {
         onChange={handleChange}
         className="w-full p-2 border rounded"
       />
-
-      <label htmlFor="Author_Name" className="block font-semibold"></label>
       <input
-        list="authors"
-        name="Author_Name"
-        placeholder="Type or select author name"
-        value={formData.Author_Name}
+        name="Author_ID"
+        type="number"
+        placeholder="Author ID"
+        value={formData.Author_ID}
         onChange={handleChange}
         className="w-full p-2 border rounded"
         required
       />
-      <datalist id="authors">
-        {authors.map(author => (
-          <option key={author.author_id} value={ author.author_name } />
-        ))}
-      </datalist>
-
+      <input
+        name="Publisher_ID"
+        type="number"
+        placeholder="Publisher ID"
+        value={formData.Publisher_ID}
+        onChange={handleChange}
+        className="w-full p-2 border rounded"
+        required
+      />
+      <input
+        name="Category_ID"
+        type="text"
+        placeholder="Category IDs (comma-separated)"
+        value={formData.Category_ID}
+        onChange={handleChange}
+        className="w-full p-2 border rounded"
+        required
+      />
       <input
         name="Price"
         type="number"

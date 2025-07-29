@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Menu } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
 
 import AddBookForm from './sections/AddBookForm';
 import AddAuthorForm from './sections/AddAuthorForm';
@@ -9,11 +10,13 @@ import PendingOrders from './sections/PendingOrders';
 import PreviousOrders from './sections/PreviousOrders';
 import PublisherProfile from './sections/PublisherProfile';
 import EditBookPrices from './sections/EditBookPrices';
+import ViewAuthors from './sections/ViewAuthors';
 import SearchOwnBooks from './sections/SearchOwnBooks';
 
 const tabs = [
   { key: 'profile', label: 'My Profile' },
   { key: 'search', label: 'My Books' },
+  { key: 'view-authors', label: 'Authors' },
   { key: 'add-book', label: 'Add Book' },
   { key: 'add-author', label: 'Add Author' },
   { key: 'edit-price', label: 'Edit Price' },
@@ -23,9 +26,17 @@ const tabs = [
 ];
 
 export default function PublisherDashboard() {
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState('search');
   const [menuOpen, setMenuOpen] = useState(false);
   const [publisherId, setPublisherId] = useState(null);
+
+  useEffect(() => {
+    const tabFromUrl = searchParams.get('tab');
+    if (tabFromUrl) {
+      setActiveTab(tabFromUrl);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     // Fetch publisher ID from localStorage or token
@@ -56,7 +67,7 @@ export default function PublisherDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-blue-50">
       {/* Menu Button */}
       <div className="flex justify-end p-4 relative z-50">
         <button onClick={() => setMenuOpen(!menuOpen)}>
@@ -84,6 +95,7 @@ export default function PublisherDashboard() {
         <div className="bg-white p-6 rounded-2xl shadow">
           {activeTab === 'search' && <SearchOwnBooks publisherId={publisherId} />}
           {activeTab === 'add-book' && <AddBookForm publisherId={publisherId} />}
+          {activeTab === 'view-authors' && <ViewAuthors/>}
           {activeTab === 'add-author' && <AddAuthorForm />}
           {activeTab === 'pending-orders' && <PendingOrders publisherId={publisherId} />}
           {activeTab === 'previous-orders' && <PreviousOrders publisherId={publisherId} />}

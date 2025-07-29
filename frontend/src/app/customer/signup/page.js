@@ -43,7 +43,7 @@ export default function CustomerSignup() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-6">
+    <div className="min-h-screen bg-blue-50 flex items-center justify-center p-6">
       <form
         onSubmit={handleSubmit}
         className="w-full max-w-md bg-white p-6 rounded shadow space-y-4"

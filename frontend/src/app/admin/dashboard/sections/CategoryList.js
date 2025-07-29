@@ -32,9 +32,11 @@ export default function CategoryList() {
           {categories.map((cat) => (
             <li key={cat.category_id} className="py-3">
               <p className="text-lg font-medium">{cat.category_name}</p>
+              <p className="text-sm text-gray-600">Catagory ID: {cat.category_id}</p>
               {cat.description && (
                 <p className="text-sm text-gray-600">{cat.description}</p>
               )}
+              
             </li>
           ))}
         </ul>

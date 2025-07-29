@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { Menu } from 'lucide-react';
 
 import AddPublisherForm from './sections/AddPublisherForm';
+import AddCategoryForm from './sections/AddCategoryForm';
+import AssignCategory from './sections/AssignCategory';
 import BookSearch from './sections/BookSearch';
 import PublisherList from './sections/PublisherList';
 import CategoryList from './sections/CategoryList';
@@ -21,6 +23,8 @@ const tabs = [
   { key: 'categories', label: 'Categories' },
   { key: 'inventory', label: 'Inventory' },
   { key: 'add-publisher', label: 'Add Publisher' },
+  { key: 'add-category', label: 'Add Category' },
+  { key: 'assign-category', label: 'Assign Category' },
   { key: 'buy-books', label: 'Buy Books' },
   { key: 'previous-orders', label: 'Previous Orders' },
   { key: 'logout', label: 'Logout' },
@@ -46,7 +50,7 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-blue-50">
       {/* Menu Toggle Button (Top Right) */}
       <div className="flex justify-end p-4 relative z-50">
         <button onClick={() => setMenuOpen(!menuOpen)}>
@@ -77,6 +81,8 @@ export default function AdminDashboard() {
           {activeTab === 'search' && <BookSearch />}
           {activeTab === 'inventory' && <InventoryList />}
           {activeTab === 'add-publisher' && <AddPublisherForm />}
+          {activeTab === 'add-category' && <AddCategoryForm />}
+          {activeTab === 'assign-category' && <AssignCategory />}
           {activeTab === 'publishers' && <PublisherList />}
           {activeTab === 'buy-books' && <BuyBooks />}
           {activeTab === 'previous-orders' && <PreviousOrders />}
