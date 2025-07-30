@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Menu } from 'lucide-react';
-
+import { getAdminIdFromToken } from '../../utils/auth';
 import AddPublisherForm from './sections/AddPublisherForm';
 import AddCategoryForm from './sections/AddCategoryForm';
 import AssignCategory from './sections/AssignCategory';
@@ -16,6 +16,7 @@ import CustomerDetails from './sections/CustomerDetails';
 import BuyBooks from './sections/BuyBooks';
 import GiftCard from './sections/GiftCard';
 import PreviousOrders from './sections/PreviousOrders';
+
 const tabs = [
   { key: 'search', label: 'Books' },
   { key: 'view-customers', label: 'Customers' },
@@ -36,11 +37,18 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('search');
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [adminId, setAdminId] = useState(null);
+
+  useEffect(() => {
+    const id = getAdminIdFromToken();
+    setAdminId(id);
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     window.location.href = '/';
   };
+
   if (activeTab === 'logout') {
     handleLogout();
     return null;
@@ -53,8 +61,16 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-blue-50">
-      {/* Menu Toggle Button (Top Right) */}
-      <div className="flex justify-end p-4 relative z-50">
+      {/* Top Bar */}
+      <div className="flex justify-between items-start p-4 relative z-50">
+        {/* Admin ID Display (Left) */}
+        {adminId && (
+          <div className="text-left text-sm text-gray-700 pl-2 pt-1 font-bold">
+            Admin ID: {adminId}
+          </div>
+        )}
+
+        {/* Menu Toggle Button (Right) */}
         <button onClick={() => setMenuOpen(!menuOpen)}>
           <Menu size={28} />
         </button>
@@ -91,13 +107,12 @@ export default function AdminDashboard() {
           {activeTab === 'categories' && <CategoryList />}
           {activeTab === 'view-authors' && <AuthorList />}
           {activeTab === 'gift-card' && <GiftCard />}
-          {activeTab === 'view-customers' && (
-            selectedCustomer ? (
+          {activeTab === 'view-customers' &&
+            (selectedCustomer ? (
               <CustomerDetails customer={selectedCustomer} onBack={() => setSelectedCustomer(null)} />
             ) : (
               <CustomerList onSelectCustomer={setSelectedCustomer} />
-            )
-          )}
+            ))}
         </div>
       </div>
     </div>
