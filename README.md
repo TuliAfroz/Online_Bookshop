@@ -52,8 +52,8 @@ This will install:
 ### 4️⃣ **Configure Environment Variables**
 Create a `.env` file in the root directory and add:
 ```env
-SUPABASE_URL=your_supabase_project_url
-SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_URL=postgresql://postgres.ojpvlpajjeqdgnydqvad:1254@&1254@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres
+JWT_SECRET=aBcD123eFgH??
 ```
 
 ### 5️⃣ **Run the Application**
