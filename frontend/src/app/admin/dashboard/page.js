@@ -14,6 +14,7 @@ import AuthorList from './sections/AuthorList';
 import CustomerList from './sections/CustomerList';
 import CustomerDetails from './sections/CustomerDetails';
 import BuyBooks from './sections/BuyBooks';
+import GiftCard from './sections/GiftCard';
 import PreviousOrders from './sections/PreviousOrders';
 const tabs = [
   { key: 'search', label: 'Books' },
@@ -26,6 +27,7 @@ const tabs = [
   { key: 'add-category', label: 'Add Category' },
   { key: 'assign-category', label: 'Assign Category' },
   { key: 'buy-books', label: 'Buy Books' },
+  { key: 'gift-card', label: 'Giftcards' },
   { key: 'previous-orders', label: 'Previous Orders' },
   { key: 'logout', label: 'Logout' },
 ];
@@ -88,6 +90,7 @@ export default function AdminDashboard() {
           {activeTab === 'previous-orders' && <PreviousOrders />}
           {activeTab === 'categories' && <CategoryList />}
           {activeTab === 'view-authors' && <AuthorList />}
+          {activeTab === 'gift-card' && <GiftCard />}
           {activeTab === 'view-customers' && (
             selectedCustomer ? (
               <CustomerDetails customer={selectedCustomer} onBack={() => setSelectedCustomer(null)} />
