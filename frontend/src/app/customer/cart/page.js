@@ -121,6 +121,11 @@ export default function CustomerCartPage() {
       alert('❌ Server error during order.');
     }
   };
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    router.push('/');
+  };
+
 
   // Cancel order
   const handleCancelOrder = async () => {
@@ -274,7 +279,7 @@ export default function CustomerCartPage() {
                   handleLogout();
                 }}
               >
-                Sign Out
+                Logout
               </button>
             </div>
           )}
